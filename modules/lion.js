@@ -142,51 +142,27 @@ function mergeCache() {
  * @return {Array}     An array of object with ori, dst, class and flight property
  */
 function getCheapestInRow(rowAll) {
-	// debug('rowAll',row );
-	var seatRequest = this.paxNum || 1;
+	var _this = this;
+	var seatRequest = _this.paxNum || 1;
 	var outs = [];
-	var lastDst, classes, ori, dst, flight, flights, realOri, realDst;
-	lastDst = classes = ori = dst = flight = flights = realOri = realDst = '';
+	var classes, ori, dst, flight, flights;
+	classes = ori = dst = flight = flights = '';
 	var transitCounter = 0;
 	var transits = [];
-	// loop all row
-	// we don\'t know whether this is a new row or connecting from last row
-	// if ori equal last dst then it's a connecting row
+	var realDst = _this._dt.dst;
+	var realOri = _this._dt.ori;
 	_.each(rowAll, function(row, idx) {
-		// debug('idx', idx);
-		// debug('getCheapestInRow row', row)
-		var rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
-		flight = row.aircraft.match(/images\/Logos\/(\w+)/)[1] || '';
-		ori = rute.substr(0, 3);
-		dst = rute.substr(3, 3);
-		// if not equal, then this is a new row, insert last out
-		if (idx === '0') {
-			realOri = ori;
-		} else if (ori !== lastDst) {
-			out = {
-				ori: realOri,
-				dst: lastDst,
-				flight: flights,
-				class: classes,
-			};
-			var flightNum;
-			transits.forEach(function(transit, idx) {
-					out['transit' + (idx + 1)] = transit;
-					flightNum = idx;
-				});
-				// debug('out', out);
-			if (out.class.length * 2 === out.flight.length)
-				outs.push(out);
-			realOri = ori;
-			classes = flights = '';
-			transitCounter = 0;
-			transits = [];
-		} else {
-			// equal, this is a connecting
-			transits[transitCounter++] = lastDst;
-			// debug('transits', transits);
+		if(row.RT){
+			realDst = _this._dt.ori;
+			realOri = _this._dt.dst;
+			return true;
 		}
-		flights += flight;
+		flight = row.aircraft.split('/div>')[1].replace(/\ /g, '-');
+		var rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
+		var pipe = '';
+		if(flights.length>=1)
+			pipe = '|';
+		flights += pipe+flight;
 		var aClass = Object.keys(row)
 			.filter(function(b) {
 				return b.length === 1;
@@ -200,23 +176,25 @@ function getCheapestInRow(rowAll) {
 				}
 			}
 		});
-		lastDst = dst;
-		// debug(out);
+		ori = rute.substr(0, 3);
+		dst = rute.substr(3, 3);
+		if (dst.toLowerCase() === realDst.toLowerCase()) {
+			out = {
+				ori: realOri,
+				dst: realDst,
+				flight: flights,
+				class: classes,
+			};
+			if (out.class.length === out.flight.split('|').length)
+				outs.push(out);
+			classes = flights = '';
+			transitCounter = 0;
+			transits = [];
+		} else {
+			transits[transitCounter++] = dst;
+		}
 	});
-	out = {
-		ori: realOri,
-		dst: lastDst,
-		flight: flights,
-		class: classes,
-	};
-	var flightNum;
-	transits.forEach(function(transit, idx) {
-			out['transit' + (idx + 1)] = transit;
-			flightNum = idx;
-		});
-		// debug('out', out);
-	if (out.class.length * 2 === out.flight.length)
-		outs.push(out);
+	// debug('outs', outs);
 	return outs;
 }
 
@@ -240,7 +218,7 @@ function generateData(id) {
 		dep_date: this._dt.dep_date,
 		// dep_date      : moment().add(1, 'M').format('DD+MMM+YYYY'),
 		rute: 'OW',
-		dep_radio: 'XX_XX_XX_XX',
+		dep_radio: cek_instant_id,
 		action: 'price',
 		user: 'ndebomitra',
 		priceScraper: false
@@ -287,53 +265,30 @@ function mergeCachePrices(json) {
 	var _this = this;
 	// debug('_this.cachePrices',JSON.stringify(_this.cachePrices));
 	var departureCheapests = [];
+	var returnCheapests = [];
 	var lastDst, classes, ori, dst, flight, flights, realOri, realDst, rute, _rute;
 	var _cheapest = {};
-	lastDst = classes = ori = dst = flight = flights = realOri = realDst = '';
+	classes = ori = dst = flight = flights = realOri = realDst = '';
 	var transitCounter = 0;
 	var transits = [];
 	var rowIdx = 0;
-	// loop all row
-	_.each(_json[0].dep_table, function(row, idx) {
-		// debug(idx);
-		rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
-		flight = row.aircraft.match(/images\/Logos\/(\w+)/)[1] || '';
-		rute = rute.toLowerCase();
-		flight = flight.toLowerCase();
-		ori = rute.substr(0, 3);
-		dst = rute.substr(3, 3);
-		if (idx === '0') {
-			realOri = ori;
-		} else if (ori !== lastDst) {
-			// if not equal, then this is a new row, insert last cheapest
-			_rute = realOri;
-			transits.forEach(function(transit) {
-				_rute += transit;
-			});
-			_rute += lastDst;
-			try {
-				_cheapest.prices = _this.cachePrices[_rute][flights.toLowerCase()][classes.toLowerCase()];
-				_cheapest.class = classes;
-			} catch (e) {
-				debug(e.stack, _rute, flights, classes);
-				_this.cachePrices[_rute] = _this.cachePrices[_rute] || {};
-				_this.cachePrices[_rute][flights] = _this.cachePrices[_rute][flights] || {};
-				_cheapest = {
-					class: 'Full'
-				};
-			}
-			departureCheapests[rowIdx++] = _cheapest;
-			realOri = ori;
-			classes = flights = '';
-			transitCounter = 0;
-			transits = [];
-			_cheapest = {};
-		} else {
-			// equal, this is a connecting
-			transits[transitCounter++] = lastDst;
-			// debug('transits', transits);
+	var realDst = _this._dt.dst;
+	var realOri = _this._dt.ori;
+	var allRow = _this.prepareRows(_json);
+	_.each(allRow[0], function(row, idx) {
+		if(row.RT){
+			debug('mergeCachePrices rute is RT');
+			realDst = _this._dt.ori;
+			realOri = _this._dt.dst;
+			rowIdx = 0;
+			return true;
 		}
-		flights += flight;
+		flight = row.aircraft.split('/div>')[1].replace(/\ /g, '-');
+		var rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
+		var pipe = '';
+		if(flights.length>=1)
+			pipe = '|';
+		flights += pipe+flight;
 		var aClass = Object.keys(row)
 			.filter(function(b) {
 				return b.length === 1;
@@ -361,30 +316,42 @@ function mergeCachePrices(json) {
 				}
 			}
 		});
-		lastDst = dst;
+		ori = rute.substr(0, 3).toLowerCase();
+		dst = rute.substr(3, 3).toLowerCase();
+		if (dst === realDst.toLowerCase()) {
+			_rute = realOri;
+			// transits.forEach(function(transit) {
+			// 	_rute += transit;
+			// });
+			_rute += realDst;
+			try {
+				_cheapest.prices = _this.cachePrices[_rute][flights.toLowerCase()][classes.toLowerCase()];
+				_cheapest.class = classes;
+			} catch (e) {
+				debug(e.stack, _rute, flights, classes);
+				_this.cachePrices[_rute] = _this.cachePrices[_rute] || {};
+				_this.cachePrices[_rute][flights] = _this.cachePrices[_rute][flights] || {};
+				_cheapest = {
+					class: 'Full'
+				};
+			}
+			if(realDst.toLowerCase() === _this._dt.ori.toLowerCase())
+				returnCheapests[rowIdx++] = _cheapest;
+			else
+				departureCheapests[rowIdx++] = _cheapest;
+			classes = flights = '';
+			transitCounter = 0;
+			transits = [];
+			_cheapest = {};
+		} else {
+			transits[transitCounter++] = dst;
+		}
 	});
-	_rute = realOri;
-	transits.forEach(function(transit) {
-		_rute += transit;
-	});
-	_rute += lastDst;
-	try {
-		_cheapest.prices = _this.cachePrices[_rute][flights.toLowerCase()][classes.toLowerCase()];
-		_cheapest.class = classes;
-	} catch (e) {
-		debug(e.stack, _rute, flights, classes);
-		_this.cachePrices[_rute] = _this.cachePrices[_rute] || {};
-		_this.cachePrices[_rute][flights] = _this.cachePrices[_rute][flights] || {};
-		_cheapest = {
-			class: 'Full'
-		};
-	}
-	departureCheapests[rowIdx++] = _cheapest;
 	_json.cachePrices = _this.cachePrices;
 	_json[0].dep_cheapests = departureCheapests;
-	// debug('cheapests', departureCheapests);
-	// debug(_json.dep_table);
-	// var ret = _json.return;
+	if(_this._dt.rute.toLowerCase()=='rt'){
+		_json[0].ret_cheapests = returnCheapests;
+	}
 	return _json;
 }
 
@@ -397,9 +364,8 @@ function prepareRows(json) {
 	var _json = _.cloneDeep(json[0]);
 	var rows = [];
 	rows = rows.concat(_.values(_json.dep_table));
-	// debug('rows',_json.departure.flights);
 	if (!!_json.ret_table[0])
-		rows = rows.concat(_.values(_json.ret_table));
+		rows = rows.concat({ RT:true }, _.values(_json.ret_table));
 	return [rows];
 }
 
@@ -408,7 +374,7 @@ function getCalendarPrice(json) {
 	var format = ['DDMMM', 'DMMM'];
 	var format2 = ['DDMMMHHmm', 'DMMMHHmm'];
 	return new Promise(function(resolve, reject) {
-		if (!json[0].dep_table && !json[0].dep_table[0] && !json[0].dep_table[0].dateDepart)
+		if (!json[0].dep_table || !json[0].dep_table[0])
 			return resolve();
 		var hiddens = json[0].dep_table[0].hidden.split('|');
 		var date = moment(hiddens[3], format);
@@ -419,21 +385,54 @@ function getCalendarPrice(json) {
 		if (date.isBefore(checkDate, 'day'))
 			_this.isSameDay = true;
 		var cheapests = [];
+		var realDst = _this._dt.dst;
+		var rowIdx = 0;
 		_.each(json[0].dep_table, function(flight, i) {
-			hiddens = flight.hidden.split('|');
-			var depart = moment(hiddens[3] + hiddens[8], format2);
-			if (_this.isBookable(depart)){
-				try{
-					if (json[0].dep_cheapests[i].prices){
-						cheapests.push(json[0].dep_cheapests[i]);
+			var rute = flight.hidden.match(/[A-Z]{6}/)[0] || '';
+			dst = rute.substr(3, 3).toLowerCase();
+			if (dst === realDst.toLowerCase()) {
+				hiddens = flight.hidden.split('|');
+				var depart = moment(hiddens[3] + hiddens[8], format2);
+				if (_this.isBookable(depart)){
+					try{
+						if (json[0].dep_cheapests[rowIdx].prices){
+							cheapests.push(json[0].dep_cheapests[rowIdx]);
+						}
+					}catch(e){
+						debug('getCalendarPrice',json[0].dep_cheapests[rowIdx]);
 					}
-				}catch(e){
-					debug('getCalendarPrice',json[0].dep_cheapests[i]);
+					rowIdx++;
 				}
 			}
 		});
-		debug('before filter %d', _.size(json[0].dep_table));
+		debug('before filter %d', rowIdx);
 		debug('after filter %d', cheapests.length);
+		if(_this._dt.rute.toLowerCase()=='rt' && json[0].ret_table && json[0].ret_table[0]){
+			var hiddens = json[0].ret_table[0].hidden.split('|');
+			var date = moment(hiddens[3], format);
+			var dayRangeForExpiredCheck = 2;
+			var checkDate = moment()
+				.add(dayRangeForExpiredCheck, 'day');
+			_this.isSameDay = false;
+			if (date.isBefore(checkDate, 'day'))
+				_this.isSameDay = true;
+			var retCheapests = [];
+			_.each(json[0].ret_table, function(flight, i) {
+				hiddens = flight.hidden.split('|');
+				var depart = moment(hiddens[3] + hiddens[8], format2);
+				if (_this.isBookable(depart)){
+					try{
+						if (json[0].ret_cheapests[i].prices){
+							retCheapests.push(json[0].ret_cheapests[i]);
+						}
+					}catch(e){
+						debug('getCalendarPrice',json[0].ret_cheapests[i]);
+					}
+				}
+			});
+			debug('return before filter %d', _.size(json[0].ret_table));
+			debug('return after filter %d', retCheapests.length);
+		}
 		var cheapestFlight = _.min(cheapests, function(cheapest, i) {
 			debug('cheapests: %j', cheapest.prices.adult);
 			return cheapest.prices.adult;
