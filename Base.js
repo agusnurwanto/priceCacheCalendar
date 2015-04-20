@@ -587,7 +587,13 @@ function merge(json) {
 	var _this = this;
 	var rows = _this.prepareRows(json);
 	// debug('json',json);
-	var aoCheapest = _this.getAllCheapest(rows);
+	try{
+		var aoCheapest = _this.getAllCheapest(rows).bind(_this);
+		debug('merge with bind _this');
+	}catch(e){
+		debug('merge without bind');
+		var aoCheapest = _this.getAllCheapest(rows);
+	}
 	debug('aoCheapest', aoCheapest);
 	var dataCalendar = {
 		airline : _this.airline,
