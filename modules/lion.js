@@ -263,9 +263,8 @@ function scrapeLostData(id) {
 	if (!!process.env.SCRAPE_HOST)
 	    host = process.env.SCRAPE_HOST;
 	var urlAirbinder = 'http://'+host+':2/price';
-	var urlPluto = 'http://pluto.dev/0/price/lion';
 	var options = {
-		scrape: urlAirbinder,
+		scrape: this.scrape || urlAirbinder,
 		dt: dt,
 		airline: 'lion'
 	};
