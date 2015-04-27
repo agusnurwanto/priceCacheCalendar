@@ -207,6 +207,9 @@ function generateData(id) {
 	var _id = id.split('_');
 	var cek_instant_id = _id[3] + '_' + _id[4];
 	cek_instant_id = cek_instant_id.toUpperCase();
+	var date = this._dt.dep_date;
+	if(_id[1] == this._dt.ori.toLowerCase())
+		date = this._dt.ret_date;
 	var data = {
 		ori: _id[0],
 		dst: _id[1],
@@ -215,7 +218,7 @@ function generateData(id) {
 		classCode: _id[4],
 		cek_instant: 1,
 		cek_instant_id: cek_instant_id,
-		dep_date: this._dt.dep_date,
+		dep_date: date,
 		// dep_date      : moment().add(1, 'M').format('DD+MMM+YYYY'),
 		rute: 'OW',
 		dep_radio: cek_instant_id,
