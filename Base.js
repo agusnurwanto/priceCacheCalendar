@@ -477,6 +477,9 @@ function scrapeAllLostData(data) {
 	var _this = this;
 	var results = [];
 	var steps;
+	if(this.airline == 'lion'){
+		return _this.scrapeLostData(data);
+	}
 	debug('scrapeAllLostData parallel', _this.parallel);
 	if (!!_this.parallel) {
 		steps = [];
@@ -670,6 +673,41 @@ function merge(json) {
 			return _this.mergeCachePrices(json);
 		});
 }
+
+function saveCache(results, dt, callback) {
+	var _this = this;
+    var _prices = {
+        adult: _this.calculateAdult(results),
+        child: _this.calculateChild(results),
+        infant: _this.calculateInfant(results),
+        basic: _this.calculateBasic(results),
+    };
+    var data = {
+        origin: dt.ori.toLowerCase(),
+        destination: dt.dst.toLowerCase(),
+        airline: dt.airline.toLowerCase(),
+        flight: dt.dep_radio.split('_')[0].toLowerCase() || '',
+        class: dt.dep_radio.split('_')[1].toLowerCase() || '',
+        prices: _prices,
+        price: _prices.adult,
+    };
+    data.id = _this.generateId(data);
+    _this.db.index(_this.index, _this.type, data, function(err, res) {
+        debug('savecache', res, data);
+        return callback(err, data);
+    });
+}
+
+function generateId(data) {
+    var id = data.origin + '_' 
+        + data.destination + '_' 
+        + data.airline + '_' 
+        + data.flight + '_' 
+        + data.class;
+    debug(id);
+    return id.toLowerCase();
+}
+
 var BasePrototype = {
 	init: init,
 	setOption: setOption,
@@ -690,6 +728,8 @@ var BasePrototype = {
 	getCalendarPrice: getCalendarPrice,
 	isBookable: isBookable,
 	merge: merge,
+	saveCache: saveCache,
+	generateId: generateId,
 };
 var Base = Class.extend(BasePrototype);
 module.exports = Base;

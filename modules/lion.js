@@ -11,6 +11,10 @@ var Promise = require('promise');
 function init(dt, scrape, args) {
 	this._super('lion', dt, scrape, args);
 	this.parallel = true;
+	this._this = args._this;
+	this.step1Price = args.step1Price;
+	this.jsonPrice = args.jsonPrice;
+	this.resFlight = args.resFlight;
 }
 
 function getAllRoutes() {
@@ -203,33 +207,36 @@ function getCheapestInRow(rowAll) {
  * @param  {String} id String id from database
  * @return {Object}    Object data for scrape
  */
-function generateData(id) {
-	var _id = id.split('_');
-	var cek_instant_id = _id[3] + '_' + _id[4];
-	cek_instant_id = cek_instant_id.toUpperCase();
-	var date = this._dt.dep_date;
-	if(_id[1] == this._dt.ori.toLowerCase())
-		date = this._dt.ret_date;
-	var data = {
-		ori: _id[0],
-		dst: _id[1],
-		airline: _id[2],
-		flightCode: _id[3],
-		classCode: _id[4],
-		cek_instant: 1,
-		cek_instant_id: cek_instant_id,
-		dep_date: date,
-		// dep_date      : moment().add(1, 'M').format('DD+MMM+YYYY'),
-		rute: 'OW',
-		dep_radio: cek_instant_id,
-		action: 'price',
-		user: 'ndebomitra',
-		priceScraper: false
-	};
-	for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
-		data['transit' + j] = _id[i];
+function generateData(ids) {
+	var dataAll = [];
+	for(var i in ids){
+		var id = ids[i];
+		var _id = id.split('_');
+		var cek_instant_id = _id[3] + '_' + _id[4];
+		cek_instant_id = cek_instant_id.toUpperCase();
+		var date = this._dt.dep_date;
+		if(_id[1] == this._dt.ori.toLowerCase())
+			date = this._dt.ret_date;
+		var data = {
+			ori: _id[0],
+			dst: _id[1],
+			airline: _id[2],
+			flightCode: _id[3],
+			classCode: _id[4],
+			cek_instant: 1,
+			cek_instant_id: cek_instant_id,
+			dep_date: date,
+			// dep_date      : moment().add(1, 'M').format('DD+MMM+YYYY'),
+			rute: 'OW',
+			dep_radio: cek_instant_id,
+			action: 'price',
+		};
+		for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
+			data['transit' + j] = _id[i];
+		}
+		dataAll.push(data);
 	}
-	return data;
+	return dataAll;
 }
 
 /**
@@ -237,23 +244,160 @@ function generateData(id) {
  * @param  {String} id Data generated id to scrape
  * @return {Object}    Return cache data after scrape it
  */
-function scrapeLostData(id) {
-	debug('scrapeLostData', id);
-	var dt = this.generateData(id);
-	var host = 'localhost';
-	if (!!process.env.SCRAPE_HOST)
-	    host = process.env.SCRAPE_HOST;
-	var urlAirbinder = 'http://'+host+':2/price';
+function scrapeLostData(ids) {
+	var _this = this;
+	var dt = _this.generateData(ids);
+    _this.modes = _this._this.defaultModes || ['100', '110', '111'];
 	var options = {
-		scrape: this.scrape || urlAirbinder,
-		dt: dt,
-		airline: 'lion'
+		ids: dt,
+		mode: _this.modes[0]
 	};
-	var lionPriceScrapers = new LionPriceScrapers(options);
-	return lionPriceScrapers.run()
-		.catch(function(err) {
-			debug('lionPriceScrapers', err);
-		});
+	_this.oriData = JSON.parse(JSON.stringify(_this._dt));
+    _this._this.data.query.rute = 'ow';
+	_this.data = [];
+	_this.data.query = this._dt;
+	_this.allModes = [];
+	_this.resultsPrice = [];
+    _this._this.data.query.adult = options.mode[0];
+    _this._this.data.query.child = options.mode[1];
+    _this._this.data.query.infant = options.mode[2];
+	return new Promise(function(resolve, reject){
+		_this.getCache(options, 'idsDep', resolve);
+	});
+}
+
+function getCache(options, note, resolve){
+    var _this = this;
+    _this.idsDep = [];
+    _this.idsRet = [];
+    for(var i in options.ids){
+    	var id = options.ids[i];
+    	if(id.ori==_this.oriData.ori){
+    		_this.idsDep.push(id);
+    	}else{
+    		_this.idsRet.push(id);
+    	}
+    }
+    var that = _this._this;
+    _this.allModes.push(options.mode);
+    _this.relogModes = false;
+    for(var i in _this.modes){
+        if(!_this.allModes[i]){
+            _this.relogModes = _this.modes[i];
+            break;
+        }
+    }
+    if(note=='idsRet'){
+    	var newRute = _this.oriData.ori+'_'+_this.oriData.dst;
+    	that.data.query.ori = newRute.split('_')[1];
+    	that.data.query.dst = newRute.split('_')[0];
+    	that.data.query.dep_date = _this.oriData.ret_date;
+	    if(_this.idsRet.length==0)
+	        that.resFlight = true;
+    }else{
+	    if(_this.idsDep.length==0)
+	        that.resFlight = true;
+    }
+    debug(note, 'that.data.query', that.data.query, _this.relogModes, _this.modes);
+    that.step1()
+    .then(function(res){
+        that.resFlight = res;
+        var arrayPromise = _this[note].map(function (_dt) {
+            return _this.getPrice(_dt, that);
+        });
+        Promise.all(arrayPromise)
+        .then(function(res){
+            that.resFlight = false;
+            if(_this.relogModes){
+                that.data.query.adult = _this.relogModes[0];
+                that.data.query.child = _this.relogModes[1];
+                that.data.query.infant = _this.relogModes[2];
+                options.mode = _this.relogModes;
+            	return _this.getCache(options, note, resolve); 
+            }else{
+            	if(note!='idsRet' && _this.oriData.rute.toLowerCase()=='rt'){
+					_this.allModes = [];
+                	options.mode = that.defaultModes[0];
+	                that.data.query.adult = options.mode[0];
+	                that.data.query.child = options.mode[1];
+	                that.data.query.infant = options.mode[2];
+            		return _this.getCache(options, 'idsRet', resolve);
+            	}else{
+            		return resolve();
+            	}
+            }
+        })
+        .catch(function(err){
+            debug(err.stack);
+            return resolve();
+        })
+    })
+    .catch(function(err){
+        debug(err.stack);
+        return resolve();
+    })
+}
+
+function getPrice(_dt, that){
+    var _this = this;
+    var that = _this._this;
+    return new Promise(function(resl, rejc){
+    	_dt.adult = that.data.query.adult;
+    	_dt.child = that.data.query.child;
+    	_dt.infant = that.data.query.infant;
+        var _data = JSON.parse(JSON.stringify(_dt));
+        that.step1Price(_data)
+        .then(function(res){
+            that.jsonPrice(res)
+            .then(function(results){
+                var _id = _data.ori+'_'+_data.dst+'_'+_data.airline+'_'+_data.dep_radio;
+                if(!_this.resultsPrice[_id]){
+                    _this.resultsPrice[_id] = [];
+                }
+                _this.resultsPrice[_id].push(results)
+                if(!_this.relogModes){
+                    _this.saveCache(_this.resultsPrice[_id], _dt, function(err, res){
+                        return resl(res);
+                    });
+                }else{
+                    return resl(results);
+                }
+            })
+            .catch(function(err){
+                debug(err.stack);
+                return resl(err);
+            })
+        })
+        .catch(function(err){
+            debug(err.stack);
+            return resl(err);
+        })
+    })
+    .catch(function(err){
+        debug(err.stack);
+        return Promise.resolve(err);
+    })
+}
+
+function calculateAdult(results) {
+    var adult = results[0][0].price.total.replace(/\,/g, '').replace(/\./g,'');
+    return parseInt(adult);
+}
+
+function calculateChild(results) {
+    var child = results[0][0].price.total.replace(/\,/g, '').replace(/\./g,'');
+    return parseInt(child);
+}
+
+function calculateInfant(results) {
+    var total_100 = results[0][0].price.total.replace(/\,/g, '').replace(/\./g,'');
+    var total_101 = results[1][0].price.total.replace(/\,/g, '').replace(/\./g,'');
+    return total_101-total_100;
+}
+
+function calculateBasic(results) {
+    var basic = results[0][0].price.published_fare.replace(/\,/g, '').replace(/\./g,'');
+    return parseInt(basic);
 }
 
 /**
@@ -453,6 +597,12 @@ var LionPrototype = {
 	mergeCachePrices: mergeCachePrices,
 	prepareRows: prepareRows,
 	getCalendarPrice: getCalendarPrice,
+	getCache: getCache,
+	getPrice: getPrice,
+	calculateAdult: calculateAdult,
+	calculateChild: calculateChild,
+	calculateInfant: calculateInfant,
+	calculateBasic: calculateBasic,
 };
 var Lion = Base.extend(LionPrototype);
 module.exports = Lion;
