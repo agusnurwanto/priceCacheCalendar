@@ -220,12 +220,8 @@ function mergeCachePrices(json) {
 	
 	var format = ['M/D/YYYY', 'YYYY/MM/DD'];
 	var format2 = ['M/D/YYYY HHmm', 'YYYY/MM/DD HHmm'];
-	var date = moment.utc($('#UTCDATE').text(), format);
 	var dayRangeForExpiredCheck = 2;
 	var checkDate = moment().add(dayRangeForExpiredCheck, 'day');
-	_this.isSameDay = false;
-	if (date.isBefore(checkDate, 'day'))
-		_this.isSameDay = true;
 	_json[0].dep_table = _.mapValues(_json[0].dep_table, function(row) {
 		row.cheapest = {
 			class: 'Full',
@@ -268,6 +264,10 @@ function mergeCachePrices(json) {
 		flightCode = flightCode.toLowerCase();
 		var classCode = _class.toLowerCase() + nominal;
 		var $ = cheerio.load(row.dateDepart);
+		var date = moment.utc($('#UTCDATE').text(), format);
+		_this.isSameDay = false;
+		if (date.isBefore(checkDate, 'day'))
+			_this.isSameDay = true;
 		var depart = moment.utc($('#UTCDATE').text() + ' ' + $('#UTCTIME').text(), format2).local();
 			try {
 				if (_this.isBookable(depart)){

@@ -1,6 +1,6 @@
 var ElasticSearchClient = require('elasticsearchclient');
 var config = {
-    host: 'folbek.me',
+    host: 'localhost',
     port: 9200
 };
 if (process.env.CONFIG === 'local')
