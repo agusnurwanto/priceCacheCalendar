@@ -46,7 +46,7 @@ function init(airline, dt, scrape, args) {
 		this.setOptions(args);
 		// this.parallel = true;
 	} catch (e) {
-		debug(e);
+		debug('Error:', e.stack);
 	}
 }
 
@@ -477,7 +477,8 @@ function scrapeAllLostData(data) {
 	var _this = this;
 	var results = [];
 	var steps;
-	if(this.airline == 'lion'){
+	var newAirlineScrape = new Array('lion', 'airasia');
+	if(newAirlineScrape.indexOf(this.airline) != '-1'){
 		return _this.scrapeLostData(data);
 	}
 	debug('scrapeAllLostData parallel', _this.parallel);
@@ -682,6 +683,11 @@ function saveCache(results, dt, callback) {
         infant: _this.calculateInfant(results),
         basic: _this.calculateBasic(results),
     };
+    if(_this.addons){
+    	_this.addons.map(function(addon){
+    		_prices[addon.replace('calculate', '').toLowerCase()] = _this[addon](results);
+    	});
+    }
     var data = {
         origin: dt.ori.toLowerCase(),
         destination: dt.dst.toLowerCase(),

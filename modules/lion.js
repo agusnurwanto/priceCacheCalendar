@@ -12,8 +12,6 @@ function init(dt, scrape, args) {
 	this._super('lion', dt, scrape, args);
 	this.parallel = true;
 	this._this = args._this;
-	this.step1Price = args.step1Price;
-	this.jsonPrice = args.jsonPrice;
 	this.resFlight = args.resFlight;
 }
 
