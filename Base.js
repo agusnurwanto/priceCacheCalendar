@@ -575,6 +575,8 @@ function getCalendarPrice(json) {
 }
 
 function isBookable(hour) {
+	// perubahan sistem oleh ronnit, fungsi ini digunakan di client site
+	return true;
 	if (!this.isSameDay)
 		return true;
 	var expired = this.expired || 4;
