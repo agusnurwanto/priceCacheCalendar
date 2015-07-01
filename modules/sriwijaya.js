@@ -95,8 +95,9 @@ function mergeCache() {
 						cachePrice = Math.round(cachePrice / 10) * 10;
 						// debug(currentRoute + ':' + currentFCode + ':' + classCode + ' = ' + available + '. cachePrice: ' + cachePrice)
 						// debug('cachePrice',cachePrice)
-						$('.avcellFare', td)
-							.text('' + cachePrice);
+						// $('.avcellFare', td).text('' + cachePrice);
+						var realPrice = $('.avcellFare', td).text();
+						$('.avcellFare', td).text(realPrice.replace(/,/g,'.')+'.000,00');
 						if (!!available && (!lowestPrices[currentRoute] || (lowestPrices[currentRoute] > cachePrice && !!cachePrice)))
 							lowestPrices[currentRoute] = cachePrice;
 					});
@@ -169,7 +170,7 @@ function getCheapestInRow(row) {
 				}
 			}
 		});
-		debug('out.class', out.class, numTrips);
+		// debug('out.class', out.class, numTrips);
 		if (!!out.class && out.class.length === numTrips){
 			outs.push(out);
 		}
