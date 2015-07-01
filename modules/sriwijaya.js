@@ -96,8 +96,6 @@ function mergeCache() {
 						// debug(currentRoute + ':' + currentFCode + ':' + classCode + ' = ' + available + '. cachePrice: ' + cachePrice)
 						// debug('cachePrice',cachePrice)
 						// $('.avcellFare', td).text('' + cachePrice);
-						var realPrice = $('.avcellFare', td).text();
-						$('.avcellFare', td).text(realPrice.replace(/,/g,'.')+'.000,00');
 						if (!!available && (!lowestPrices[currentRoute] || (lowestPrices[currentRoute] > cachePrice && !!cachePrice)))
 							lowestPrices[currentRoute] = cachePrice;
 					});
