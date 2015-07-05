@@ -211,7 +211,8 @@ function generateData(id) {
 		dep_radio: '1Fare6',
 		action: 'price',
 		user: 'mitrabook',
-		priceScraper: false
+		priceScraper: false,
+		xToken: this._dt.xToken,
 	};
 	for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
 		data['transit' + j] = _id[i];

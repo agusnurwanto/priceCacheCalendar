@@ -228,6 +228,7 @@ function generateData(ids) {
 			rute: 'OW',
 			dep_radio: cek_instant_id,
 			action: 'price',
+			xToken: this._dt.xToken,
 		};
 		for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
 			data['transit' + j] = _id[i];

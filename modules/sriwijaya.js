@@ -199,7 +199,8 @@ function generateData(id) {
 		rute: 'OW',
 		action: 'price',
 		user: 'DEPAG0101',
-		priceScraper: false
+		priceScraper: false,
+		xToken: this._dt.xToken,
 	};
 	for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
 		data['transit' + j] = _id[i];
