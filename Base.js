@@ -477,7 +477,7 @@ function scrapeAllLostData(data) {
 	var _this = this;
 	var results = [];
 	var steps;
-	var newAirlineScrape = new Array('lion', 'airasia');
+	var newAirlineScrape = new Array('lion', 'airasia', 'kalstar');
 	if(newAirlineScrape.indexOf(this.airline) != '-1'){
 		return _this.scrapeLostData(data);
 	}
@@ -680,10 +680,10 @@ function merge(json) {
 function saveCache(results, dt, callback) {
 	var _this = this;
     var _prices = {
-        adult: _this.calculateAdult(results),
-        child: _this.calculateChild(results),
-        infant: _this.calculateInfant(results),
-        basic: _this.calculateBasic(results),
+        adult: _this.calculateAdult(results, dt),
+        child: _this.calculateChild(results, dt),
+        infant: _this.calculateInfant(results, dt),
+        basic: _this.calculateBasic(results, dt),
     };
     if(_this.addons){
     	_this.addons.map(function(addon){

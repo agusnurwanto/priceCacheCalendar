@@ -11,6 +11,8 @@ var Promise = require('promise');
 function init(dt, scrape, args) {
 	this._super('kalstar', dt, scrape, args);
 	this.parallel = false;
+	this._this = args._this;
+	this.resFlight = args.resFlight;
 }
 
 function getAllRoutes() {
@@ -125,19 +127,157 @@ function generateData(id) {
  * @param  {String} id Data generated id to scrape
  * @return {Object}    Return cache data after scrape it
  */
-function scrapeLostData(id) {
-	debug('scrapeLostData', id);
-	var dt = this.generateData(id);
+function scrapeLostData(ids) {
+	var _this = this;
+	var dt = _this.generateData(ids);
+	var passengersNum = (+this._dt.adult) + (+this._dt.child);
+    _this.modes = _this._this.defaultModes || [passengersNum+'00'];
 	var options = {
-		scrape: this.scrape || urlAirbinder,
-		dt: dt,
-		airline: 'kalstar'
+		ids: dt,
+		mode: _this.modes[0]
 	};
-	var kalstarPriceScrapers = new KalstarPriceScrapers(options);
-	return kalstarPriceScrapers.run()
-		.catch(function(err) {
-			debug('kalstarPriceScrapers', err);
-		});
+	_this.oriData = JSON.parse(JSON.stringify(_this._dt));
+    _this._this.data.query.rute = 'ow';
+	_this.data = [];
+	_this.data.query = this._dt;
+	_this.allModes = [];
+	_this.resultsPrice = [];
+    _this._this.data.query.adult = options.mode[0];
+    _this._this.data.query.child = options.mode[1];
+    _this._this.data.query.infant = options.mode[2];
+	return new Promise(function(resolve, reject){
+		_this.getCache(options, 'idsDep', resolve);
+	});
+}
+
+function getCache(options, note, resolve){
+    var _this = this;
+    _this.idsDep = [];
+    _this.idsRet = [];
+    for(var i in options.ids){
+    	var id = options.ids[i];
+    	if(id.ori==_this.oriData.ori){
+    		_this.idsDep.push(id);
+    	}else{
+    		_this.idsRet.push(id);
+    	}
+    }
+    var that = _this._this;
+    _this.allModes.push(options.mode);
+    _this.relogModes = false;
+    for(var i in _this.modes){
+        if(!_this.allModes[i]){
+            _this.relogModes = _this.modes[i];
+            break;
+        }
+    }
+    if(note=='idsRet'){
+    	var newRute = _this.oriData.ori+'_'+_this.oriData.dst;
+    	that.data.query.ori = newRute.split('_')[1];
+    	that.data.query.dst = newRute.split('_')[0];
+    	that.data.query.dep_date = _this.oriData.ret_date;
+	    if(_this.idsRet.length==0)
+	        that.resFlight = true;
+    }else{
+	    if(_this.idsDep.length==0)
+	        that.resFlight = true;
+    }
+    debug(note, 'that.data.query', that.data.query, _this.relogModes, _this.modes);
+    that.step1()
+    .then(function(res){
+        that.resFlight = res;
+        var arrayPromise = _this[note].map(function (_dt) {
+            return _this.getPrice(_dt, that);
+        });
+        Promise.all(arrayPromise)
+        .then(function(res){
+            that.resFlight = false;
+            if(_this.relogModes){
+                that.data.query.adult = _this.relogModes[0];
+                that.data.query.child = _this.relogModes[1];
+                that.data.query.infant = _this.relogModes[2];
+                options.mode = _this.relogModes;
+            	return _this.getCache(options, note, resolve); 
+            }else{
+            	if(note!='idsRet' && _this.oriData.rute.toLowerCase()=='rt'){
+					_this.allModes = [];
+                	options.mode = that.defaultModes[0];
+	                that.data.query.adult = options.mode[0];
+	                that.data.query.child = options.mode[1];
+	                that.data.query.infant = options.mode[2];
+            		return _this.getCache(options, 'idsRet', resolve);
+            	}else{
+            		return resolve();
+            	}
+            }
+        })
+        .catch(function(err){
+            debug(err.stack);
+            return resolve();
+        })
+    })
+    .catch(function(err){
+        debug(err.stack);
+        return resolve();
+    })
+}
+
+function getPrice(_dt, that){
+    var _this = this;
+    var that = _this._this;
+    return new Promise(function(resl, rejc){
+    	_dt.adult = that.data.query.adult;
+    	_dt.child = that.data.query.child;
+    	_dt.infant = that.data.query.infant;
+        var _data = JSON.parse(JSON.stringify(_dt));
+        that.step1Price(_data)
+        .then(function(res){
+            that.jsonPrice(res)
+            .then(function(results){
+                var _id = _data.ori+'_'+_data.dst+'_'+_data.airline+'_'+_data.dep_radio;
+                if(!_this.resultsPrice[_id]){
+                    _this.resultsPrice[_id] = [];
+                }
+                _this.resultsPrice[_id].push(results)
+                if(!_this.relogModes){
+                    _this.saveCache(_this.resultsPrice[_id], _dt, function(err, res){
+                        return resl(res);
+                    });
+                }else{
+                    return resl(results);
+                }
+            })
+            .catch(function(err){
+                debug(err.stack);
+                return resl(err);
+            })
+        })
+        .catch(function(err){
+            debug(err.stack);
+            return resl(err);
+        })
+    })
+    .catch(function(err){
+        debug(err.stack);
+        return Promise.resolve(err);
+    })
+}
+
+function calculateAdult(results) {
+	var _X01 = results[0]['fare_info'][1][0];
+	return _X01 / this.dt.adult;
+}
+function calculateChild(results) {
+	var _X01 = results[0]['fare_info'][1][0];
+	return _X01 / this.dt.adult;
+}
+function calculateInfant(results) {
+	var _X01  = results[0]['fare_info'][3][0];
+	return _X01 / this.dt.infant;
+}
+function calculateBasic(results) {
+	var _X01  = results[0]['fare_info'][1][0];
+	return _X01 / this.dt.passengersNum;
 }
 
 /**
@@ -262,6 +402,12 @@ var KalstarPrototype = {
 	mergeCachePrices: mergeCachePrices,
 	prepareRows: prepareRows,
 	getCalendarPrice: getCalendarPrice,
+	getCache: getCache,
+	getPrice: getPrice,
+	calculateAdult: calculateAdult,
+	calculateChild: calculateChild,
+	calculateInfant: calculateInfant,
+	calculateBasic: calculateBasic,
 };
 var Kalstar = Base.extend(KalstarPrototype);
 module.exports = Kalstar;
