@@ -12,7 +12,6 @@ function init(dt, scrape, args) {
 	this._super('kalstar', dt, scrape, args);
 	this.parallel = false;
 	this._this = args._this;
-	this.resFlight = args.resFlight;
 }
 
 function getAllRoutes() {
@@ -71,14 +70,16 @@ function getCheapestInRow(_row) {
 	var __row = _row[10]
 	__row = __row instanceof Array ? __row : [__row];
 	_.each(__row, function (row) {
-		var out = {
-			ori: _row[1],
-			dst: _row[2],
-			flight: _row[0],
-			class: row[0],
-		};
-		outs.push(out);
-		return false;
+		if(row[1].indexOf('A') != '-1'){
+			var out = {
+				ori: _row[1],
+				dst: _row[2],
+				flight: _row[0],
+				class: row[0],
+			};
+			outs.push(out);
+			return false;
+		}
 	});
 	return outs;
 }
@@ -88,38 +89,44 @@ function getCheapestInRow(_row) {
  * @param  {String} id String id from database
  * @return {Object}    Object data for scrape
  */
-function generateData(id) {
-	var _id = id.split('_');
-	var passengersNum = (+this._dt.adult) + (+this._dt.child);
-	debug('passengersNum', passengersNum);
-	var dep_date = this._dt.dep_date.replace(/\s/g, '+');
-	// if RT
-	if(_id[0].toUpperCase() != this._dt.ori.toUpperCase()){
-		dep_date = this._dt.ret_date.replace(/\s/g, '+');
+function generateData(ids) {
+	var dataAll = [];
+	for(var i in ids){
+		var id = ids[i];
+		var _id = id.split('_');
+		var passengersNum = (+this._dt.adult) + (+this._dt.child);
+		debug('passengersNum', passengersNum);
+		var dep_date = this._dt.dep_date.replace(/\s/g, '+');
+		// if RT
+		if(_id[0].toUpperCase() != this._dt.ori.toUpperCase()){
+			dep_date = this._dt.ret_date.replace(/\s/g, '+');
+		}
+		var data = {
+			ori: _id[0].toUpperCase(),
+			dst: _id[1].toUpperCase(),
+			airline: _id[2],
+			adult: this._dt.adult,
+			child: this._dt.child,
+			infant: this._dt.infant,
+			flightCode: _id[3].toUpperCase(),
+			classCode: _id[4].toUpperCase(),
+			passengersNum: passengersNum,
+			cek_instant: 1,
+			dep_date: dep_date,
+			rute: 'OW',
+			dep_radio: _id[3].toUpperCase()+'-'+_id[4].toUpperCase(),
+			action: 'price',
+			user: this._dt.user,
+			priceScraper: false,
+			xToken: this._dt.xToken,
+			scraperPrice: true,
+		};
+		for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
+			data['transit' + j] = _id[i];
+		}
+		dataAll.push(data);
 	}
-	var data = {
-		ori: _id[0].toUpperCase(),
-		dst: _id[1].toUpperCase(),
-		airline: _id[2],
-		adult: this._dt.adult,
-		child: this._dt.child,
-		infant: this._dt.infant,
-		flightCode: _id[3].toUpperCase(),
-		classCode: _id[4].toUpperCase(),
-		passengersNum: passengersNum,
-		cek_instant: 1,
-		dep_date: dep_date,
-		rute: 'OW',
-		dep_radio: _id[3].toUpperCase()+'-'+_id[4].toUpperCase(),
-		action: 'price',
-		user: this._dt.user,
-		priceScraper: false,
-		xToken: this._dt.xToken,
-	};
-	for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
-		data['transit' + j] = _id[i];
-	}
-	return data;
+	return dataAll;
 }
 
 /**
@@ -141,7 +148,7 @@ function scrapeLostData(ids) {
 	_this.data = [];
 	_this.data.query = this._dt;
 	_this.allModes = [];
-	_this.resultsPrice = [];
+	_this.cekAllIds = [];
     _this._this.data.query.adult = options.mode[0];
     _this._this.data.query.child = options.mode[1];
     _this._this.data.query.infant = options.mode[2];
@@ -156,65 +163,63 @@ function getCache(options, note, resolve){
     _this.idsRet = [];
     for(var i in options.ids){
     	var id = options.ids[i];
-    	if(id.ori==_this.oriData.ori){
+    	if(id.ori.toLowerCase()==_this.oriData.ori.toLowerCase()){
     		_this.idsDep.push(id);
     	}else{
     		_this.idsRet.push(id);
     	}
     }
     var that = _this._this;
-    _this.allModes.push(options.mode);
-    _this.relogModes = false;
-    for(var i in _this.modes){
-        if(!_this.allModes[i]){
-            _this.relogModes = _this.modes[i];
-            break;
-        }
+    _this.relogModesId = false;
+    for(var i in _this[note]){
+    	if(!_this.cekAllIds[i]){
+    		_this.cekAllIds[i] = _this[note][i];
+    		_this.relogModesId = _this[note][i];
+    		break;
+    	}
     }
+    if(!_this.relogModesId){
+	    _this.allModes.push(options.mode);
+	    _this.relogModes = false;
+	    for(var i in _this.modes){
+	        if(!_this.allModes[i]){
+	            _this.relogModes = _this.modes[i];
+	            break;
+	        }
+	    }
+	}
     if(note=='idsRet'){
     	var newRute = _this.oriData.ori+'_'+_this.oriData.dst;
     	that.data.query.ori = newRute.split('_')[1];
     	that.data.query.dst = newRute.split('_')[0];
     	that.data.query.dep_date = _this.oriData.ret_date;
-	    if(_this.idsRet.length==0)
-	        that.resFlight = true;
-    }else{
-	    if(_this.idsDep.length==0)
-	        that.resFlight = true;
     }
-    debug(note, 'that.data.query', that.data.query, _this.relogModes, _this.modes);
-    that.step1()
+    if(!_this.relogModesId && !_this.relogModes && (note=='idsRet' || _this.oriData.rute.toLowerCase()!='rt')){
+    	return resolve();
+    }
+    _this.getPrice(_this.relogModesId, that)
     .then(function(res){
-        that.resFlight = res;
-        var arrayPromise = _this[note].map(function (_dt) {
-            return _this.getPrice(_dt, that);
-        });
-        Promise.all(arrayPromise)
-        .then(function(res){
-            that.resFlight = false;
-            if(_this.relogModes){
-                that.data.query.adult = _this.relogModes[0];
-                that.data.query.child = _this.relogModes[1];
-                that.data.query.infant = _this.relogModes[2];
-                options.mode = _this.relogModes;
-            	return _this.getCache(options, note, resolve); 
-            }else{
-            	if(note!='idsRet' && _this.oriData.rute.toLowerCase()=='rt'){
-					_this.allModes = [];
-                	options.mode = that.defaultModes[0];
-	                that.data.query.adult = options.mode[0];
-	                that.data.query.child = options.mode[1];
-	                that.data.query.infant = options.mode[2];
-            		return _this.getCache(options, 'idsRet', resolve);
-            	}else{
-            		return resolve();
-            	}
-            }
-        })
-        .catch(function(err){
-            debug(err.stack);
-            return resolve();
-        })
+        if(_this.relogModesId){
+        	return _this.getCache(options, note, resolve); 
+        }else if(_this.relogModes){
+        	_this.cekAllIds = [];
+            that.data.query.adult = _this.relogModes[0];
+            that.data.query.child = _this.relogModes[1];
+            that.data.query.infant = _this.relogModes[2];
+            options.mode = _this.relogModes;
+        	return _this.getCache(options, note, resolve); 
+        }else{
+        	if(note!='idsRet' && _this.oriData.rute.toLowerCase()=='rt'){
+				_this.allModes = [];
+            	options.mode = that.defaultModes[0];
+                that.data.query.adult = options.mode[0];
+                that.data.query.child = options.mode[1];
+                that.data.query.infant = options.mode[2];
+        		return _this.getCache(options, 'idsRet', resolve);
+        	}else{
+        		return resolve();
+        	}
+        }
     })
     .catch(function(err){
         debug(err.stack);
@@ -224,7 +229,6 @@ function getCache(options, note, resolve){
 
 function getPrice(_dt, that){
     var _this = this;
-    var that = _this._this;
     return new Promise(function(resl, rejc){
     	_dt.adult = that.data.query.adult;
     	_dt.child = that.data.query.child;
@@ -234,15 +238,24 @@ function getPrice(_dt, that){
         .then(function(res){
             that.jsonPrice(res)
             .then(function(results){
-                var _id = _data.ori+'_'+_data.dst+'_'+_data.airline+'_'+_data.dep_radio;
-                if(!_this.resultsPrice[_id]){
-                    _this.resultsPrice[_id] = [];
-                }
-                _this.resultsPrice[_id].push(results)
                 if(!_this.relogModes){
-                    _this.saveCache(_this.resultsPrice[_id], _dt, function(err, res){
-                        return resl(res);
-                    });
+                	results.fare_info.reduce(function(prev, next){
+                		return prev.then(function(){
+	                		var _class = next[0].split('/');
+			            	var radio = _data.dep_radio.split('_')[0].split('-');
+			            	_data.dep_radio = radio[0]+'-'+radio[1]+'_'+_class[0].toLowerCase();
+		                    return _this.saveCache(next, _data, function(err, res){
+		                        return Promise.resolve(res);
+		                    });
+                		})
+			            .catch(function(err){
+			                debug(err.stack);
+			                return Promise.resolve(err);
+			            });
+                	}, Promise.resolve(true))
+                	.then(function(res){
+                		return resl(res);
+                	})
                 }else{
                     return resl(results);
                 }
@@ -263,21 +276,21 @@ function getPrice(_dt, that){
     })
 }
 
-function calculateAdult(results) {
-	var _X01 = results[0]['fare_info'][1][0];
-	return _X01 / this.dt.adult;
+function calculateAdult(results, dt) {
+	var _X01 = results[1][0];
+	return _X01 / dt.passengersNum;
 }
-function calculateChild(results) {
-	var _X01 = results[0]['fare_info'][1][0];
-	return _X01 / this.dt.adult;
+function calculateChild(results, dt) {
+	var _X01 = results[2][0];
+	return _X01 / dt.passengersNum;
 }
-function calculateInfant(results) {
-	var _X01  = results[0]['fare_info'][3][0];
-	return _X01 / this.dt.infant;
+function calculateInfant(results, dt) {
+	var _X01 = results[3][0];
+	return _X01 / dt.passengersNum;
 }
-function calculateBasic(results) {
-	var _X01  = results[0]['fare_info'][1][0];
-	return _X01 / this.dt.passengersNum;
+function calculateBasic(results, dt) {
+	var _X01 = results[1][1];	
+	return _X01 / dt.passengersNum;
 }
 
 /**
