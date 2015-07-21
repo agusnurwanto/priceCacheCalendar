@@ -5,6 +5,7 @@ var sriwijaya = require('./modules/sriwijaya');
 var airasia   = require('./modules/airasia');
 var express   = require('./modules/express');
 var kalstar   = require('./modules/kalstar');
+var trigana   = require('./modules/trigana');
 var airlines  = {
 	garuda    : garuda,
 	lion      : lion,
@@ -13,6 +14,7 @@ var airlines  = {
 	airasia   : airasia,
 	express   : express,
 	kalstar   : kalstar,
+	trigana   : trigana,
 }
 /**
  * Main function that returning function on init
