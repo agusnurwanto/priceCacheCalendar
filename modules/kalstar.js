@@ -324,6 +324,10 @@ function mergeCachePrices(json) {
 			var nominal = 0;
 			var __class = row[10][0][0].toLowerCase();
 			var available = row[10][0][1];
+			if(available != 'A'){
+				row.push(cheapest);
+				return true;
+			}
 			cheapest = _this.cachePrices[currentRoute][flight][__class];
 			cheapest.class = __class;
 			cheapest.available = available;

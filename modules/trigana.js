@@ -1,15 +1,15 @@
 var Base = require('../Base');
 var moment = require('moment');
-var debug = require('debug')('raabbajam:priceCacheCalendar:trigana');
+var debug = require('debug')('raabbajam:priceCacheCalendar:kalstar');
 var _ = require('lodash');
 var db = require('../libs/db');
 var priceScrapers = require('priceScraper');
-var triganaPriceScrapers = priceScrapers.trigana;
+var KalstarPriceScrapers = priceScrapers.kalstar;
 var cheerio = require('cheerio');
 var Promise = require('promise');
 
 function init(dt, scrape, args) {
-	this._super('trigana', dt, scrape, args);
+	this._super('kalstar', dt, scrape, args);
 	this.parallel = false;
 	this._this = args._this;
 }
@@ -324,6 +324,10 @@ function mergeCachePrices(json) {
 			var nominal = 0;
 			var __class = row[10][0][0].toLowerCase();
 			var available = row[10][0][1];
+			if(available != 'A'){
+				row.push(cheapest);
+				return true;
+			}
 			cheapest = _this.cachePrices[currentRoute][flight][__class];
 			cheapest.class = __class;
 			cheapest.available = available;
@@ -405,7 +409,7 @@ function getCalendarPrice(json) {
 	});
 }
 
-var triganaPrototype = {
+var KalstarPrototype = {
 	init: init,
 	getAllRoutes: getAllRoutes,
 	mergeCache: mergeCache,
@@ -422,8 +426,8 @@ var triganaPrototype = {
 	calculateInfant: calculateInfant,
 	calculateBasic: calculateBasic,
 };
-var trigana = Base.extend(triganaPrototype);
-module.exports = trigana;
+var Kalstar = Base.extend(KalstarPrototype);
+module.exports = Kalstar;
 
 // utils
 function isFull(seat) {
