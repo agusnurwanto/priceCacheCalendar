@@ -326,7 +326,8 @@ function mergeCachePrices(json) {
 			var __class = row[10][0][0].toLowerCase();
 			var available = row[10][0][1];
 			var availableNum = available.match(/\d+/);
-			if(available!='A' || (availableNum && availableNum[0]>0)){
+			debug('row', available, availableNum[0]);
+			if(available!='A' && (!availableNum || +availableNum[0]<=0)){
 				row.push(cheapest);
 				return true;
 			}
@@ -334,6 +335,7 @@ function mergeCachePrices(json) {
 			cheapest.class = __class;
 			cheapest.available = available;
 			row.push({ cheapest: cheapest });
+			debug('row', row);
 			return row;
 		});
 		return rows;

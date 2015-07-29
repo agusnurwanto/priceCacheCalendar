@@ -477,7 +477,7 @@ function scrapeAllLostData(data) {
 	var _this = this;
 	var results = [];
 	var steps;
-	var newAirlineScrape = new Array('lion', 'airasia', 'kalstar');
+	var newAirlineScrape = new Array('lion', 'airasia', 'kalstar', 'trigana');
 	if(newAirlineScrape.indexOf(this.airline) != '-1'){
 		return _this.scrapeLostData(data);
 	}
