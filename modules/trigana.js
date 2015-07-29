@@ -70,7 +70,8 @@ function getCheapestInRow(_row) {
 	var __row = _row[10]
 	__row = __row instanceof Array ? __row : [__row];
 	_.each(__row, function (row) {
-		if(row[1].indexOf('A') != '-1'){
+		var available = row[1].match(/\d+/);
+		if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
 			var out = {
 				ori: _row[1],
 				dst: _row[2],
@@ -324,7 +325,8 @@ function mergeCachePrices(json) {
 			var nominal = 0;
 			var __class = row[10][0][0].toLowerCase();
 			var available = row[10][0][1];
-			if(available != 'A'){
+			var availableNum = available.match(/\d+/);
+			if(available!='A' || (availableNum && availableNum[0]>0)){
 				row.push(cheapest);
 				return true;
 			}
