@@ -67,21 +67,41 @@ function mergeCache() {
 	 */
 function getCheapestInRow(_row) {
 	var outs = [];
-	var __row = _row[10]
-	__row = __row instanceof Array ? __row : [__row];
-	_.each(__row, function (row) {
-		var available = row[1].match(/\d+/);
-		if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
-			var out = {
-				ori: _row[1],
-				dst: _row[2],
-				flight: _row[0],
-				class: row[0],
-			};
-			outs.push(out);
-			return false;
-		}
-	});
+	if(typeof _row[0] == 'array'){
+		_.each(_row, function(ow){
+			var __row = ow[10];
+			__row = __row instanceof Array ? __row : [__row];
+			_.each(__row, function (row) {
+				var available = row[1].match(/\d+/);
+				if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
+					var out = {
+						ori: ow[1],
+						dst: ow[2],
+						flight: ow[0],
+						class: row[0],
+					};
+					outs.push(out);
+					return false;
+				}
+			});
+		});
+	}else{
+		var __row = _row[10];
+			__row = __row instanceof Array ? __row : [__row];
+			_.each(__row, function (row) {
+				var available = row[1].match(/\d+/);
+				if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
+					var out = {
+						ori: _row[1],
+						dst: _row[2],
+						flight: _row[0],
+						class: row[0],
+					};
+					outs.push(out);
+					return false;
+				}
+			});
+	}
 	return outs;
 }
 
@@ -103,7 +123,8 @@ function generateData(ids) {
 			dep_date = this._dt.ret_date.replace(/\s/g, '+');
 		}
 		var data = {
-			ori: _id[0].toUpperCase(),
+			ori: _this._dt.ori.toUpperCase(),
+			// ori: _id[0].toUpperCase(),
 			dst: _id[1].toUpperCase(),
 			airline: _id[2],
 			adult: this._dt.adult,
@@ -136,6 +157,7 @@ function generateData(ids) {
  * @return {Object}    Return cache data after scrape it
  */
 function scrapeLostData(ids) {
+	debug('scrapeLostData', ids);
 	var _this = this;
 	var dt = _this.generateData(ids);
 	var passengersNum = (+this._dt.adult) + (+this._dt.child);
@@ -159,6 +181,7 @@ function scrapeLostData(ids) {
 }
 
 function getCache(options, note, resolve){
+	debug('getCache');
     var _this = this;
     _this.idsDep = [];
     _this.idsRet = [];
@@ -198,6 +221,7 @@ function getCache(options, note, resolve){
     if(!_this.relogModesId && !_this.relogModes && (note=='idsRet' || _this.oriData.rute.toLowerCase()!='rt')){
     	return resolve();
     }
+    debug('getCache2')
     _this.getPrice(_this.relogModesId, that)
     .then(function(res){
         if(_this.relogModesId){
@@ -229,6 +253,7 @@ function getCache(options, note, resolve){
 }
 
 function getPrice(_dt, that){
+	debug('getPrice')
     var _this = this;
     return new Promise(function(resl, rejc){
     	_dt.adult = that.data.query.adult;
@@ -302,8 +327,14 @@ function calculateBasic(results, dt) {
 function mergeCachePrices(json) {
 	var _this = this;
 	var json = JSON.parse(json);
-	function looper(dir) {
-		var rows = _.values(json[dir][0]);
+	function looper(dir, num) {
+		var rows = _.values(json[dir][num]);
+		if(!rows[0]){
+			return rows;
+		}
+		if(typeof rows[0] == 'array'){
+			rows = rows[0];
+		}
 		rows.forEach(function(row) {
 			var cheapest = {
 				class: 'Full',
@@ -323,26 +354,33 @@ function mergeCachePrices(json) {
 				return true;
 			}
 			var nominal = 0;
-			var __class = row[10][0][0].toLowerCase();
-			var available = row[10][0][1];
-			var availableNum = available.match(/\d+/);
-			debug('row', available, availableNum[0]);
-			if(available!='A' && (!availableNum || +availableNum[0]<=0)){
-				row.push(cheapest);
+			var __class = '';
+			var available = '';
+			row[10].some(function(row_class){
+				__class = row_class[0].toLowerCase();
+				available = row_class[1];
+				var availableNum = available.match(/\d+/);
+				if(available=='A' || (availableNum && +availableNum[0]>=0)){
+					debug('row', __class, available);
+					return true;
+				}
+			});
+			if(row.class == 'Full')
 				return true;
-			}
 			cheapest = _this.cachePrices[currentRoute][flight][__class];
 			cheapest.class = __class;
 			cheapest.available = available;
 			row.push({ cheapest: cheapest });
-			debug('row', row);
 			return row;
 		});
 		return rows;
 	}
-	json.schedule[0] = looper('schedule');
-	if (!!json.ret_schedule)
-		json.ret_schedule[0] = looper('ret_schedule');
+	json.schedule[0] = looper('schedule', 0);
+	json.schedule[1] = looper('schedule', 1);
+	if (!!json.ret_schedule){
+		json.ret_schedule[0] = looper('ret_schedule', 0);
+		json.ret_schedule[1] = looper('ret_schedule', 1);
+	}
 	return json;
 }
 
@@ -354,7 +392,12 @@ function mergeCachePrices(json) {
 function prepareRows(json) {
 	var _json = _.cloneDeep(JSON.parse(json));
 	var rows = [];
-	rows = rows.concat(_.values(_json.schedule[0]), _.values(_json.ret_schedule[0]));
+	rows = rows.concat(
+			_.values(_json.schedule[0]), 
+			_.values(_json.schedule[1]), 
+			_.values(_json.ret_schedule[0]), 
+			_.values(_json.ret_schedule[1])
+		);
 	return rows;
 }
 

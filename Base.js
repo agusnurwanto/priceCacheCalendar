@@ -12,6 +12,7 @@ var airlines = {
 	"sriwijaya": 5,
 	"xpress": 6,
 	"kalstar": 7,
+	"trigana": 8,
 	"express": 6
 };
 var db = require('./libs/db');
@@ -592,7 +593,6 @@ function isBookable(hour) {
 function merge(json) {
 	var _this = this;
 	var rows = _this.prepareRows(json);
-	// debug('json',json);
 	try{
 		var aoCheapest = _this.getAllCheapest(rows).bind(_this);
 		debug('merge with bind _this');
