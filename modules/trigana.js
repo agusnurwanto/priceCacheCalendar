@@ -67,7 +67,7 @@ function mergeCache() {
 	 */
 function getCheapestInRow(_row) {
 	var outs = [];
-	if(typeof _row[0] == 'array'){
+	if(_row[0][0].length>1){
 		_.each(_row, function(ow){
 			var __row = ow[10];
 			__row = __row instanceof Array ? __row : [__row];
@@ -332,7 +332,7 @@ function mergeCachePrices(json) {
 		if(!rows[0]){
 			return rows;
 		}
-		if(typeof rows[0] == 'array'){
+		if( rows[0][0][0].length>1 ){
 			rows = rows[0];
 		}
 		rows.forEach(function(row) {
