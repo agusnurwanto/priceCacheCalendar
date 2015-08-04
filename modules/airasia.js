@@ -1,6 +1,6 @@
 var Base = require('../Base');
 var moment = require('moment');
-var Promise = require('promise');
+var Promise = require('bluebird');
 var debug = require('debug')('raabbajam:priceCacheCalendar:airasia');
 var _ = require('lodash');
 var cheerio = require('cheerio');

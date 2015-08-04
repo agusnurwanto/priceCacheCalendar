@@ -6,7 +6,7 @@ var db = require('../libs/db');
 var priceScrapers = require('priceScraper');
 var TriganaPriceScrapers = priceScrapers.trigana;
 var cheerio = require('cheerio');
-var Promise = require('promise');
+var Promise = require('bluebird');
 
 function init(dt, scrape, args) {
 	this._super('trigana', dt, scrape, args);

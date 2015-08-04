@@ -5,7 +5,7 @@ var _ = require('lodash');
 var db = require('../libs/db');
 var priceScrapers = require('priceScraper');
 var GarudaPriceScrapers = priceScrapers.garuda;
-var Promise = require('promise');
+var Promise = require('bluebird');
 
 function init(dt, scrape, args) {
 	this._super('garuda', dt, scrape, args);
@@ -219,7 +219,7 @@ function generateData(id) {
 function scrapeLostData(id) {
 	debug('scrapeLostData', id);
 	var dt = this.generateData(id);
-	var urlAirbinder = 'http://128.199.251.75:9098/price';
+	var urlAirbinder = 'http://pluto.live:9098/price';
 	var urlPluto = 'http://folbek.me:3000/0/price/garuda';
 	var options = {
 		dt: dt,
