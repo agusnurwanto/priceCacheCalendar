@@ -450,6 +450,7 @@ function getAllCachePrices(data) {
 			});
 		});
 	});
+	debug('ids: %j', ids);
 	return this.getCachePrices(ids);
 }
 

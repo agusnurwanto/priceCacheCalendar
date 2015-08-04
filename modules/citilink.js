@@ -272,7 +272,7 @@ function mergeCachePrices(json) {
 	return _json;
 
 	function addCacheData(table) {
-		table += '_table'
+		table += '_table';
 		return _.mapValues(_json[0][table], function(row) {
 			var rute = _.map(_.uniq(row.normal_fare.match(/~([A-Z]){3}~/g)), function(rute) {
 					return rute.replace(/\W/g, '');
