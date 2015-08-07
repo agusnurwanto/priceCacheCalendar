@@ -6,7 +6,7 @@ var db = require('../libs/db');
 var priceScrapers = require('priceScraper');
 var CitilinkPriceScrapers = priceScrapers.citilink;
 var cheerio = require('cheerio');
-var Promise = require('promise');
+var Promise = require('bluebird');
 
 function init(dt, scrape, args) {
 	this._super('citilink', dt, scrape, args);
@@ -228,8 +228,8 @@ function generateData(id) {
 function scrapeLostData(id) {
 	debug('scrapeLostData', id);
 	var dt = this.generateData(id);
-	var urlAirbinder = 'http://128.199.251.75:4/price';
-	var urlPluto = 'http://pluto.dev/0/price/citilink';
+	// var urlAirbinder = 'http://pluto.live:4000/0/price/citilink';
+	var urlAirbinder = 'http://localhost:3000/0/price/citilink';
 	// debug('dt',dt)
 	var options = {
 		scrape: this.scrape || urlAirbinder,
@@ -253,9 +253,9 @@ function mergeCachePrices(json) {
 	var _this = this;
 	var seatRequest = 1; //this.paxNum || 1;
 	// debug('_this.cachePrices',JSON.stringify(_this.cachePrices, null, 2));
-	// debug('_json.dep_table',_json)
 	var format = ['DD MM YYYY', 'DD+MM+YYYY'];
-	var format2 = ['DD MM YYYY HH:mm', 'DD+MM+YYYY HH:mm'];var dep_date = _this._dt.dep_date;
+	var format2 = ['DD MM YYYY HH:mm', 'DD+MM+YYYY HH:mm'];
+	var dep_date = _this._dt.dep_date;
 	var date = moment(dep_date, format);
 	var dayRangeForExpiredCheck = 2;
 	var checkDate = moment()
@@ -263,59 +263,68 @@ function mergeCachePrices(json) {
 	_this.isSameDay = false;
 	if (date.isBefore(checkDate, 'day'))
 		_this.isSameDay = true;
-	_json[0].dep_table = _.mapValues(_json[0].dep_table, function(row) {
-		var rute = _.map(_.uniq(row.normal_fare.match(/~([A-Z]){3}~/g)), function(rute) {
-				return rute.replace(/\W/g, '');
-			})
-			.join('');
-
-		row.cheapest = {
-			class: 'Full',
-			available: 0
-		};
-		var flight = row.flight.substr(0, 2) || '';
-		rute = rute.toLowerCase();
-		flight = flight.toLowerCase();
-		// var aClass = ['Q', 'P', 'O', 'N', 'M', 'L', 'K', 'H', 'G', 'F', 'E', 'D', 'B', 'A'];
-		var aClass = row.normal_fare.match(new RegExp('\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)', 'g'));
-		// debug('aClass',aClass,'row.normal_fare',row.normal_fare,'regex','\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)');
-		_.forEach(aClass, function(_class) {
-			// var matches = row.normal_fare.match(new RegExp('\\( ' + _class + '/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)'))
-			var matches = _class.match(new RegExp('\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)'));
-				// debug('matches',matches)
-			if (!matches)
-				return true;
-			_class = (matches[1] || 'N/A')
-				.trim();
-			var nominal = +matches[3] / 1000;
-			var matchAvailable = +(matches[2] || '0')
-				.trim();
-			// debug(matchAvailable, nominal);
-			var _classNominal = _class.toLowerCase() + nominal;
-			// debug('_classNominal',_classNominal)
-			if (matchAvailable >= seatRequest) {
-				try {
-					var depart = moment(dep_date + ' ' + row.times, format2);
-					if (_this.isBookable(depart)){
-						row.cheapest = _this.cachePrices[rute][flight][_classNominal];
-						row.cheapest.class = _class.toLowerCase();
-						row.cheapest.available = +matchAvailable;
-					}
-				} catch (e) {
-					debug(e.message, rute, flight, _classNominal);
-					_this.cachePrices[rute] = _this.cachePrices[rute] || {};
-					_this.cachePrices[rute][flight] = _this.cachePrices[rute][flight] || {};
-				}
-				return false;
-			}
-		});
-		// debug('mergeCachePrices row', row)
-		return row;
-	});
+	_json[0].dep_table = addCacheData('dep');
+	if (_json[0].ret_table)
+		_json[0].ret_table = addCacheData('ret');
 	// debug(_json.dep_table);
 	// var ret = _json.return;
 	_json.cachePrices = _this.cachePrices;
 	return _json;
+
+	function addCacheData(table) {
+		table += '_table';
+		return _.mapValues(_json[0][table], function(row) {
+			var rute = _.map(_.uniq(row.normal_fare.match(/~([A-Z]){3}~/g)), function(rute) {
+					return rute.replace(/\W/g, '');
+				})
+				.join('');
+
+			row.cheapest = {
+				class: 'Full',
+				available: 0
+			};
+			var flight = row.flight.substr(0, 2) || '';
+			rute = rute.toLowerCase();
+			flight = flight.toLowerCase();
+			// var aClass = ['Q', 'P', 'O', 'N', 'M', 'L', 'K', 'H', 'G', 'F', 'E', 'D', 'B', 'A'];
+			var aClass = row.normal_fare.match(new RegExp('\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)', 'g'));
+			// debug('aClass',aClass,'row.normal_fare',row.normal_fare,'regex','\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)');
+			_.forEach(aClass, function(_class) {
+				// var matches = row.normal_fare.match(new RegExp('\\( ' + _class + '/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)'))
+				var matches = _class.match(new RegExp('\\( ([A-Za-z]+)/Cls;\r\n([\\s\\S]+?)\\)\r\n\\s+</p><script>(\\d+)'));
+					// debug('matches',matches)
+				if (!matches)
+					return true;
+				_class = (matches[1] || 'N/A')
+					.trim();
+				var nominal = +matches[3] / 1000;
+				var matchAvailable = +(matches[2] || '0')
+					.trim();
+				// debug(matchAvailable, nominal);
+				var _classNominal = _class.toLowerCase() + nominal;
+				// debug('_classNominal',_classNominal)
+				if (matchAvailable >= seatRequest) {
+					try {
+						if (table === 'dep_table') {
+							var depart = moment(dep_date + ' ' + row.times, format2);
+							if (!_this.isBookable(depart))
+							throw new Error('This is not bookable');
+						}
+						row.cheapest = _this.cachePrices[rute][flight][_classNominal];
+						row.cheapest.class = _class.toLowerCase();
+						row.cheapest.available = +matchAvailable;
+					} catch (e) {
+						debug(e.message, rute, flight, _classNominal);
+						_this.cachePrices[rute] = _this.cachePrices[rute] || {};
+						_this.cachePrices[rute][flight] = _this.cachePrices[rute][flight] || {};
+					}
+					return false;
+				}
+			});
+			// debug('mergeCachePrices row', row)
+			return row;
+		});
+	}
 }
 
 /**
@@ -328,8 +337,11 @@ function prepareRows(json) {
 	var rows = [];
 	rows = rows.concat(_.values(_json.dep_table));
 	// debug('rows',_json.departure.flights);
-	if (!!_json.ret_table && !!_json.ret_table[0])
-		rows = rows.concat(_.values(_json.ret_table));
+	if (!!_json.ret_table) {
+		var rets = _.values(_json.ret_table);
+		if (rets)
+			rows = rows.concat(rets);
+	}
 	return rows;
 }
 

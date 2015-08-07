@@ -6,7 +6,7 @@ var db = require('../libs/db');
 var priceScrapers = require('priceScraper');
 var ExpressPriceScrapers = priceScrapers.express;
 var cheerio = require('cheerio');
-var Promise = require('promise');
+var Promise = require('bluebird');
 
 function init(dt, scrape, args) {
 	this._super('express', dt, scrape, args);
@@ -78,11 +78,8 @@ function mergeCache() {
 	 * @param  {Object} row Row object
 	 * @return {Array}     An array of object with ori, dst, class and flight property
 	 */
-function getCheapestInRow(_row) {
-	debug('rowAll',_row );
+function getCheapestInRow(row) {
 	var outs = [];
-	_row = _row instanceof Array ? _row : [_row];
-	_.each(_row, function (row) {
 		var seatRequest = this.paxNum || 1;
 		var departCity = row.origin;
 		var arriveCity = row.destination;
@@ -103,7 +100,6 @@ function getCheapestInRow(_row) {
 		};
 		if (!!out.class)
 			outs.push(out);
-	});
 	return outs;
 }
 
@@ -150,7 +146,7 @@ function generateData(id) {
 function scrapeLostData(id) {
 	debug('scrapeLostData', id);
 	var dt = this.generateData(id);
-	var urlAirbinder = 'http://128.199.251.75:8097/price';
+	var urlAirbinder = 'http://pluto.live:8097/price';
 	var urlPluto = 'http://folbek.me:3000/0/price/express';
 	// debug('dt',dt)
 	var options = {
@@ -176,45 +172,60 @@ function mergeCachePrices(json) {
 	var seatRequest = this.paxNum || 1;
 	debug('_this.cachePrices', JSON.stringify(_this.cachePrices, null, 2));
 	// debug('_json.dep_table',_json)
-	_json.departure = _.mapValues(_json.departure, function(row) {
-		// debug('row', row)
-		var departCity = row.origin;
-		var arriveCity = row.destination;
 
-		row.cheapest = {
-			class: 'Full',
-			available: 0
-		};
-		if (!departCity && !arriveCity)
-			return row;
-		var currentRoute = departCity + arriveCity;
-		currentRoute = currentRoute.toLowerCase();
-		debug('departCity', departCity, 'arriveCity', arriveCity);
-		if (!_this.cachePrices[currentRoute])
-			return row;
-		var _class = !isFull(row.promo) ? 'promo' : !isFull(row.normal) ? "normal" : 'flexi';
-		var nominal = row[_class].split(' ')[0];
-		nominal = Math.round(+nominal.replace(/\D/g, '') / 1000);
-		var flightCode = row.flightNumber.replace(/\d|\s/g, '')
-			.toLowerCase();
-		var classCode = _class.toLowerCase() + nominal;
-		debug(currentRoute, flightCode, classCode);
-		try {
-			row.cheapest = _this.cachePrices[currentRoute][flightCode][classCode];
-			row.cheapest.class = classCode;
-			row.cheapest.available = _class;
-		} catch (e) {
-			debug(e.message, currentRoute, flightCode, classCode);
-			_this.cachePrices[currentRoute] = _this.cachePrices[currentRoute] || {};
-			_this.cachePrices[currentRoute][flightCode] = _this.cachePrices[currentRoute][flightCode] || {};
-		}
-		// debug('mergeCachePrices row', row)
-		return row;
-	});
-	// debug(_json.dep_table);
-	// var ret = _json.return;
+	_json.dep_table = addCacheData('departure');
+	if (_json.return)
+		_json.ret_table = addCacheData('return');
+
 	_json.cachePrices = _this.cachePrices;
+	delete _json.dep_table;
+	delete _json.ret_table;
 	return _json;
+
+	function addCacheData(table) {
+		return _.mapValues(_json[table], function(row) {
+			// debug('row', row)
+			var departCity = row.origin;
+			var arriveCity = row.destination;
+
+			row.cheapest = {
+				class: 'Full',
+				available: 0
+			};
+			if (!departCity && !arriveCity)
+				return row;
+			var currentRoute = departCity + arriveCity;
+			currentRoute = currentRoute.toLowerCase();
+			debug('departCity', departCity, 'arriveCity', arriveCity);
+			if (!_this.cachePrices[currentRoute])
+				return row;
+			var _class = !isFull(row.promo) ? 'promo' : !isFull(row.normal) ? "normal" : 'flexi';
+			var nominal = row[_class].split(' ')[0];
+			nominal = Math.round(+nominal.replace(/\D/g, '') / 1000);
+			var flightCode = row.flightNumber.replace(/\d|\s/g, '')
+				.toLowerCase();
+			var classCode = _class.toLowerCase() + nominal;
+			debug(currentRoute, flightCode, classCode);
+			var available;
+			try {
+				available = row[_class].match(/\(\d\)/)[0].replace(/\D/g, '');
+			} catch (e) {
+				console.log(e);
+				available = 1;
+			}
+			try {
+				row.cheapest = _this.cachePrices[currentRoute][flightCode][classCode];
+				row.cheapest.class = _class;
+				row.cheapest.available = available;
+			} catch (e) {
+				debug(e.message, currentRoute, flightCode, classCode);
+				_this.cachePrices[currentRoute] = _this.cachePrices[currentRoute] || {};
+				_this.cachePrices[currentRoute][flightCode] = _this.cachePrices[currentRoute][flightCode] || {};
+			}
+			// debug('mergeCachePrices row', row)
+			return row;
+		});
+	}
 }
 
 /**
@@ -225,8 +236,7 @@ function mergeCachePrices(json) {
 function prepareRows(json) {
 	var _json = _.cloneDeep(json);
 	var rows = [];
-	rows = rows.concat(_json.departure);
-	// debug('rows',_json.departure.flights);
+	rows = rows.concat(_.values(_json.departure));
 	if (!!_json.return && !!_json.return[0])
 		rows = rows.concat(_json.return);
 	return rows;

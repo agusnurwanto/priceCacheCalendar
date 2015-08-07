@@ -1,0 +1,74 @@
+{
+  "departure": {
+    "0": {
+      "origin": "PNK",
+      "destination": "JOG",
+      "fN": "65579",
+      "flightNumber": "XN 831",
+      "via": "",
+      "date": "2015-09-06",
+      "depart": "6/09/2015 7:00:00 am",
+      "arrival": "6/09/2015 8:40:00 am",
+      "promo": "699,000  (7)",
+      "normal": "879,000  (8)",
+      "flexi": "1,643,000  (7)",
+      "cheapest": {
+        "adult": 699000,
+        "child": 699000,
+        "infant": 164300,
+        "basic": 603636.5,
+        "class": "promo",
+        "available": "7"
+      }
+    }
+  },
+  "return": [
+    {
+      "origin": "JOG",
+      "destination": "PNK",
+      "fN": "65243",
+      "flightNumber": "XN 830",
+      "via": "",
+      "date": "2015-09-12",
+      "depart": "12/09/2015 9:10:00 am",
+      "arrival": "12/09/2015 10:50:00 am",
+      "promo": "759,000  (5)",
+      "normal": "879,000  (5)",
+      "flexi": "1,487,000  (5)",
+      "cheapest": {
+        "adult": 759000,
+        "child": 759000,
+        "infant": 135000,
+        "basic": 650455,
+        "class": "promo",
+        "available": "5"
+      }
+    }
+  ],
+  "cachePrices": {
+    "pnkjog": {
+      "xn": {
+        "promo699": {
+          "adult": 699000,
+          "child": 699000,
+          "infant": 164300,
+          "basic": 603636.5,
+          "class": "promo",
+          "available": "7"
+        }
+      }
+    },
+    "jogpnk": {
+      "xn": {
+        "promo759": {
+          "adult": 759000,
+          "child": 759000,
+          "infant": 135000,
+          "basic": 650455,
+          "class": "promo",
+          "available": "5"
+        }
+      }
+    }
+  }
+}

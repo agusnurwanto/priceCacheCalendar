@@ -1,8 +1,14 @@
 var Class = require('./libs/Class');
-var Promise = require('promise');
+var Promise = require('bluebird');
 var moment = require('moment');
 var _ = require('lodash');
-var Calendar = new require('../../libs/editCalendar');
+try {
+	var Calendar = new require('../../libs/editCalendar');
+} catch (e) {
+	var Calendar = {
+		editCalendar: function () {}
+	};
+}
 var dateFormats = ['DD+MM+YYYY', 'DD+MMM+YYYY', 'DD MM YYYY', 'DD MMM YYYY'];
 var airlines = {
 	"airasia": 1,
@@ -385,7 +391,7 @@ function getCachePrices(ids) {
 				ids = [ids];
 			// debug('ids',ids);
 			var _ids = !!_this.idsToSearch ? _this.idsToSearch(ids) : ids;
-			debug('db',db)
+			// debug('db',db)
 			_this.db.multiget(_this.index, _this.type, _ids, function(err, res) {
 				if (err)
 					return reject(err);
@@ -444,6 +450,7 @@ function getAllCachePrices(data) {
 			});
 		});
 	});
+	debug('ids: %j', ids);
 	return this.getCachePrices(ids);
 }
 
@@ -707,10 +714,10 @@ function saveCache(results, dt, callback) {
 }
 
 function generateId(data) {
-    var id = data.origin + '_' 
-        + data.destination + '_' 
-        + data.airline + '_' 
-        + data.flight + '_' 
+    var id = data.origin + '_'
+        + data.destination + '_'
+        + data.airline + '_'
+        + data.flight + '_'
         + data.class;
     debug(id);
     return id.toLowerCase();

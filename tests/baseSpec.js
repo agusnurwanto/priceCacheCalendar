@@ -99,7 +99,7 @@ describe('Base', function () {
 				},
 				scrapeLostData: function (id) {
 					var dt = this.generateData(id);
-			        var urlAirbinder = 'http://128.199.251.75:9098/price';
+			        var urlAirbinder = 'http://pluto.live:9098/price';
 			        var urlPluto = 'http://pluto.dev/0/price/garuda';
 			        var options = {
 			          scrape: urlAirbinder,

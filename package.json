@@ -4,7 +4,7 @@
   "description": "my another very own function",
   "main": "index.js",
   "scripts": {
-    "test": "cd tests && DEBUG=*-mocha mocha *Spec.js -R spec",
+    "test": "DEBUG=raabbajam:* mocha -R spec -w",
     "docs": "jsdox --output documentations *.js modules/*.js",
     "testdocs": "cd tests && mocha *Spec.js -R markdown > ../TEST.md"
   },
@@ -13,7 +13,7 @@
     "url": "https://github.com/raabbajam/priceCacheCalendar.git"
   },
   "author": "Muhammad Abdul Jabbaar <muhammadabduljabbaar@gmail.com> (http://mabdulj.jasaprogrammer.com/)",
-  "license": "mit",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/raabbajam/priceCacheCalendar/issues"
   },
@@ -22,8 +22,10 @@
     "chai": "^1.9.2"
   },
   "dependencies": {
+    "bluebird": "^2.9.34",
     "cheerio": "^0.17.0",
     "debug": "^2.1.0",
+    "elasticsearchclient": "^0.5.3",
     "lodash": "^2.4.1",
     "moment": "^2.8.3",
     "priceScraper": "git+ssh://git@bitbucket.org/pondokprogrammer/pricescraper.git",
