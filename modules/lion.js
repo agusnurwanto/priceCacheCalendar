@@ -159,7 +159,7 @@ function getCheapestInRow(rowAll) {
 			realOri = _this._dt.dst;
 			return true;
 		}
-		flight = row.aircraft.split('/div>')[1].replace(/\ /g, '-');
+		flight = row.aircraft.replace(/\ /g, '-').toLowerCase();
 		var rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
 		var pipe = '';
 		if(flights.length>=1)
@@ -170,9 +170,9 @@ function getCheapestInRow(rowAll) {
 				return b.length === 1;
 			});
 		_.forEachRight(aClass, function(_class) {
-			var matchAvailable = row[_class].match(/(\d)+<\/label>/);
-			if (!!row[_class] && row[_class].indexOf('disabled') === -1 && !!matchAvailable && matchAvailable.length > 0) {
-				if (+matchAvailable[1] >= seatRequest) {
+			var matchAvailable = row[_class];
+			if (!!matchAvailable) {
+				if (+matchAvailable >= seatRequest) {
 					classes += _class;
 					return false;
 				}
@@ -196,7 +196,7 @@ function getCheapestInRow(rowAll) {
 			transits[transitCounter++] = dst;
 		}
 	});
-	// debug('outs', outs);
+	debug('outs', outs);
 	return outs;
 }
 
@@ -271,7 +271,7 @@ function getCache(options, note, resolve){
     _this.idsRet = [];
     for(var i in options.ids){
     	var id = options.ids[i];
-    	if(id.ori==_this.oriData.ori){
+    	if(id.ori.toLowerCase()==_this.oriData.ori.toLowerCase() || id.dst.toLowerCase()==_this.oriData.dst.toLowerCase()){
     		_this.idsDep.push(id);
     	}else{
     		_this.idsRet.push(id);
@@ -297,12 +297,18 @@ function getCache(options, note, resolve){
 	    if(_this.idsDep.length==0)
 	        that.resFlight = true;
     }
-    debug(note, 'that.data.query', that.data.query, _this.relogModes, _this.modes);
+    debug(note, 'that.data.query', that.data.query, _this.relogModes, _this.modes, 'that.resFlight', that.resFlight);
     that.step1()
     .then(function(res){
         that.resFlight = res;
+        var time = 0;
         var arrayPromise = _this[note].map(function (_dt) {
-            return _this.getPrice(_dt, that);
+            return new Promise(function(resolve, reject){
+            	setTimeout(function(){
+            		resolve(_this.getPrice(_dt, that));
+            	},time);
+            	time = time+5000;
+            });
         });
         Promise.all(arrayPromise)
         .then(function(res){
@@ -379,6 +385,7 @@ function getPrice(_dt, that){
 }
 
 function calculateAdult(results) {
+	debug(JSON.stringify(results));
     var adult = results[0][0].price.total.replace(/\,/g, '').replace(/\./g,'');
     return parseInt(adult);
 }
@@ -428,7 +435,7 @@ function mergeCachePrices(json) {
 			rowIdx = 0;
 			return true;
 		}
-		flight = row.aircraft.split('/div>')[1].replace(/\ /g, '-');
+		flight = row.aircraft.replace(/\ /g, '-').toLowerCase();
 		var rute = row.hidden.match(/[A-Z]{6}/)[0] || '';
 		var pipe = '';
 		if(flights.length>=1)
@@ -451,9 +458,9 @@ function mergeCachePrices(json) {
 			_this.isSameDay = true;
 		var depart = moment(hiddens[3] + hiddens[8], format2);
 		_.forEachRight(aClass, function(_class) {
-			var matchAvailable = row[_class].match(/(\d)+<\/label>/);
-			if (!!row[_class] && row[_class].indexOf('disabled') === -1 && !!matchAvailable && matchAvailable.length > 0) {
-				if (+matchAvailable[1] >= seatRequest) {
+			var matchAvailable = row[_class];
+			if (!!matchAvailable) {
+				if (+matchAvailable >= seatRequest) {
 					if (_this.isBookable(depart)){
 						classes += _class;
 					}
