@@ -397,16 +397,19 @@ function generatePrice(rows){
 		var __class = '';
 		var available = '';
 		row[10].some(function(row_class){
-			__class = row_class[0].toLowerCase();
 			available = row_class[1];
 			var availableNum = available.match(/\d+/);
 			if(available=='A' || (availableNum && +availableNum[0]>=0)){
+				__class = row_class[0].toLowerCase();
 				debug('row', __class, available);
 				return true;
 			}
 		});
-		if(row.class == 'Full')
+		if (!__class){
+			row.push(cheapest);
 			return true;
+		}
+		debug('_this.cachePrices[currentRoute]', _this.cachePrices[currentRoute], flight, __class);
 		cheapest = _this.cachePrices[currentRoute][flight][__class];
 		cheapest.class = __class;
 		cheapest.available = available;
