@@ -80,7 +80,9 @@ function getCheapestInRow(_row) {
 				if(depPrice){
 					var dataDep = { price:0 };
 					_.each(depPrice,function(cache){
-						if(ow[1].toLowerCase()==cache.origin && ow[2].toLowerCase()==cache.destination){
+						if(ow[1].toLowerCase()==cache.origin 
+							&& ow[2].toLowerCase()==cache.destination
+							&& ow[0].toLowerCase()==cache.flight){
 							if(dataDep.price==0 || dataDep.price>cache.price){
 								dataDep = cache;
 							}
@@ -91,7 +93,9 @@ function getCheapestInRow(_row) {
 					if(retPrice){
 						var dataRet = { price:0 };
 						_.each(retPrice,function(cache){
-							if(ow[1].toLowerCase()==cache.origin && ow[2].toLowerCase()==cache.destination){
+							if(ow[1].toLowerCase()==cache.origin
+								&& ow[2].toLowerCase()==cache.destination
+								&& ow[0].toLowerCase()==cache.flight){
 								if(dataRet.price==0 || dataRet.price>cache.price){
 									dataRet = cache;
 								}
@@ -124,7 +128,9 @@ function getCheapestInRow(_row) {
 			if(depPrice){
 				var dataDep = { price:0 };
 				_.each(depPrice,function(cache){
-					if(ow[1].toLowerCase()==cache.origin && ow[2].toLowerCase()==cache.destination){
+					if(ow[1].toLowerCase()==cache.origin
+						&& ow[2].toLowerCase()==cache.destination
+						&& ow[0].toLowerCase()==cache.flight){
 						if(dataDep.price==0 || dataDep.price>cache.price){
 							dataDep = cache;
 						}
@@ -135,7 +141,9 @@ function getCheapestInRow(_row) {
 				if(retPrice){
 					var dataRet = { price:0 };
 					_.each(retPrice,function(cache){
-						if(ow[1].toLowerCase()==cache.origin && ow[2].toLowerCase()==cache.destination){
+						if(ow[1].toLowerCase()==cache.origin
+							&& ow[2].toLowerCase()==cache.destination
+							&& ow[0].toLowerCase()==cache.flight){
 							if(dataRet.price==0 || dataRet.price>cache.price){
 								dataRet = cache;
 							}
@@ -166,7 +174,9 @@ function getCheapestInRow(_row) {
 		if(depPrice){
 			var dataDep = { price:0 };
 			_.each(depPrice,function(cache){
-				if(_row[1].toLowerCase()==cache.origin && _row[2].toLowerCase()==cache.destination){
+				if(_row[1].toLowerCase()==cache.origin
+					&& _row[2].toLowerCase()==cache.destination
+					&& _row[0].toLowerCase()==cache.flight){
 					if(dataDep.price==0 || dataDep.price>cache.price){
 						dataDep = cache;
 					}
@@ -177,7 +187,9 @@ function getCheapestInRow(_row) {
 			if(retPrice){
 				var dataRet = { price:0 };
 				_.each(retPrice,function(cache){
-					if(_row[1].toLowerCase()==cache.origin && _row[2].toLowerCase()==cache.destination){
+					if(_row[1].toLowerCase()==cache.origin
+						&& _row[2].toLowerCase()==cache.destination
+						&& _row[0].toLowerCase()==cache.flight){
 						if(dataRet.price==0 || dataRet.price>cache.price){
 							dataRet = cache;
 						}
@@ -495,6 +507,8 @@ function generatePrice(rows){
 						available = row_class[1];
 						if(__class==cache.class 
 							&& flight==cache.flight 
+							&& _this.cachePrices[currentRoute]
+							&& _this.cachePrices[currentRoute][flight]
 							&& _this.cachePrices[currentRoute][flight][__class]){
 							cheapest = _this.cachePrices[currentRoute][flight][__class];
 							cheapest.class = __class;
@@ -516,6 +530,8 @@ function generatePrice(rows){
 							available = row_class[1];
 							if(__class==cache.class 
 								&& flight==cache.flight 
+								&& _this.cachePrices[currentRoute]
+								&& _this.cachePrices[currentRoute][flight]
 								&& _this.cachePrices[currentRoute][flight][__class]){
 								cheapest = _this.cachePrices[currentRoute][flight][__class];
 								cheapest.class = __class;
