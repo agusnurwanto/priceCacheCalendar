@@ -84,7 +84,15 @@ function getCheapestInRow(_row) {
 							&& ow[2].toLowerCase()==cache.destination
 							&& ow[0].toLowerCase()==cache.flight){
 							if(dataDep.price==0 || dataDep.price>cache.price){
-								dataDep = cache;
+								var __row = ow[10];
+								__row = __row instanceof Array ? __row : [__row];
+								_.each(__row, function (row) {
+									var available = row[1].match(/\d+/);
+									if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+										&& row[0].toLowerCase()==cache.class){
+										dataDep = cache;
+									}
+								});
 							}
 						}
 					});
@@ -97,7 +105,15 @@ function getCheapestInRow(_row) {
 								&& ow[2].toLowerCase()==cache.destination
 								&& ow[0].toLowerCase()==cache.flight){
 								if(dataRet.price==0 || dataRet.price>cache.price){
-									dataRet = cache;
+									var __row = ow[10];
+									__row = __row instanceof Array ? __row : [__row];
+									_.each(__row, function (row) {
+										var available = row[1].match(/\d+/);
+										if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+											&& row[0].toLowerCase()==cache.class){
+											dataRet = cache;
+										}
+									});
 								}
 							}
 						});
@@ -132,7 +148,15 @@ function getCheapestInRow(_row) {
 						&& ow[2].toLowerCase()==cache.destination
 						&& ow[0].toLowerCase()==cache.flight){
 						if(dataDep.price==0 || dataDep.price>cache.price){
-							dataDep = cache;
+							var __row = ow[10];
+							__row = __row instanceof Array ? __row : [__row];
+							_.each(__row, function (row) {
+								var available = row[1].match(/\d+/);
+								if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+									&& row[0].toLowerCase()==cache.class){
+									dataDep = cache;
+								}
+							});
 						}
 					}
 				});
@@ -145,7 +169,15 @@ function getCheapestInRow(_row) {
 							&& ow[2].toLowerCase()==cache.destination
 							&& ow[0].toLowerCase()==cache.flight){
 							if(dataRet.price==0 || dataRet.price>cache.price){
-								dataRet = cache;
+								var __row = ow[10];
+								__row = __row instanceof Array ? __row : [__row];
+								_.each(__row, function (row) {
+									var available = row[1].match(/\d+/);
+									if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+										&& row[0].toLowerCase()==cache.class){
+										dataRet = cache;
+									}
+								});
 							}
 						}
 					});
@@ -178,7 +210,15 @@ function getCheapestInRow(_row) {
 					&& _row[2].toLowerCase()==cache.destination
 					&& _row[0].toLowerCase()==cache.flight){
 					if(dataDep.price==0 || dataDep.price>cache.price){
-						dataDep = cache;
+						var __row = _row[10];
+						__row = __row instanceof Array ? __row : [__row];
+						_.each(__row, function (row) {
+							var available = row[1].match(/\d+/);
+							if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+								&& row[0].toLowerCase()==cache.class){
+								dataDep = cache;
+							}
+						});
 					}
 				}
 			});
@@ -191,7 +231,15 @@ function getCheapestInRow(_row) {
 						&& _row[2].toLowerCase()==cache.destination
 						&& _row[0].toLowerCase()==cache.flight){
 						if(dataRet.price==0 || dataRet.price>cache.price){
-							dataRet = cache;
+							var __row = _row[10];
+							__row = __row instanceof Array ? __row : [__row];
+							_.each(__row, function (row) {
+								var available = row[1].match(/\d+/);
+								if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+									&& row[0].toLowerCase()==cache.class){
+									dataRet = cache;
+								}
+							});
 						}
 					}
 				});
