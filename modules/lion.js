@@ -324,7 +324,7 @@ function getCache(options, note, resolve){
             	setTimeout(function(){
             		resolve(_this.getPrice(_dt, that));
             	},time);
-            	time = time+5000;
+            	time = time+1000;
             });
         });
         Promise.all(arrayPromise)
@@ -525,7 +525,7 @@ function mergeCachePrices(json) {
 	});
 	_json.cachePrices = _this.cachePrices;
 	_json[0].dep_cheapests = departureCheapests;
-	if(_this._dt.rute.toLowerCase()=='rt'){
+	if(_this._dt.rute.toLowerCase()=='rt' || _this.oriData && _this.oriData.rute=='rt'){
 		_json[0].ret_cheapests = returnCheapests;
 	}
 	return _json;
@@ -583,7 +583,8 @@ function getCalendarPrice(json) {
 		});
 		debug('before filter %d', rowIdx);
 		debug('after filter %d', cheapests.length);
-		if(_this._dt.rute.toLowerCase()=='rt' && json[0].ret_table && json[0].ret_table[0]){
+		if((_this._dt.rute.toLowerCase()=='rt' || _this.oriData && _this.oriData.rute=='rt')
+			 && json[0].ret_table && json[0].ret_table[0]){
 			var hiddens = json[0].ret_table[0].hidden.split('|');
 			var date = moment(hiddens[3], format);
 			var dayRangeForExpiredCheck = 2;
@@ -593,17 +594,19 @@ function getCalendarPrice(json) {
 			if (date.isBefore(checkDate, 'day'))
 				_this.isSameDay = true;
 			var retCheapests = [];
+			var rowIdx = 0;
 			_.each(json[0].ret_table, function(flight, i) {
 				hiddens = flight.hidden.split('|');
 				var depart = moment(hiddens[3] + hiddens[8], format2);
 				if (_this.isBookable(depart)){
 					try{
-						if (json[0].ret_cheapests[i].prices){
-							retCheapests.push(json[0].ret_cheapests[i]);
+						if (json[0].ret_cheapests[rowIdx].prices){
+							retCheapests.push(json[0].ret_cheapests[rowIdx]);
 						}
 					}catch(e){
-						debug('getCalendarPrice',json[0].ret_cheapests[i]);
+						debug('getCalendarPrice',json[0].ret_cheapests[rowIdx]);
 					}
+					rowIdx++;
 				}
 			});
 			debug('return before filter %d', _.size(json[0].ret_table));
