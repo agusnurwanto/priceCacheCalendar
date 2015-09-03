@@ -36,27 +36,30 @@ function getAllRoutes() {
 function mergeCache() {
 	var _this = this;
 	var json = _this._scrape;
-	function looper(dir) {
-		var rows = _.values(json[dir][0]);
-		rows.forEach(function(row) {
-			var departCity = row[1];
-			var arriveCity = row[2];
-			if (!departCity && !arriveCity)
-				return true;
-			var currentRoute = departCity + arriveCity;
-			currentRoute = currentRoute.toLowerCase();
-			if (!_this.cache[currentRoute])
-				return true;
-			var currentCache = _this.cache[currentRoute];
-			var nominal = 0;
-			row.push({ lowFare: nominal});
-			return row;
-		});
+	function looper(dir, num) {
+		var rows = _.values(json[dir][num]);
+		if(!rows[0]){
+			return rows;
+		}
+		if( rows[0][0][0][0] && rows[0][0][0][0].length>1 ){
+			// rows = rows[0][0];
+			rows[0].each(function(row){
+				row = _this.generatePrice(row);
+				return row;
+			})
+		}else if( rows[0][0][0].length>1 ){
+			rows = _this.generatePrice(rows[0]);
+		}else{
+			rows = _this.generatePrice(rows);
+		}
 		return rows;
 	}
-	json.schedule[0] = looper('schedule');
-	if (!!json.ret_schedule)
-		json.ret_schedule[0] = looper('ret_schedule');
+	json.schedule[0] = looper('schedule', 0);
+	json.schedule[1] = looper('schedule', 1);
+	if (!!json.ret_schedule){
+		json.ret_schedule[0] = looper('ret_schedule', 0);
+		json.ret_schedule[1] = looper('ret_schedule', 1);
+	}
 	this._scrape = json;
 	return this._scrape;
 }
@@ -67,41 +70,201 @@ function mergeCache() {
 	 */
 function getCheapestInRow(_row) {
 	var outs = [];
-	if(_row[0][0].length>1){
-		_.each(_row, function(ow){
-			var __row = ow[10];
-			__row = __row instanceof Array ? __row : [__row];
-			_.each(__row, function (row) {
-				var available = row[1].match(/\d+/);
-				if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
-					var out = {
-						ori: ow[1],
-						dst: ow[2],
-						flight: ow[0],
-						class: row[0],
-					};
-					outs.push(out);
-					return false;
+	var _this = this;
+	var depPrice, retPrice;
+	_this._scrape.cachePrice ? depPrice = _this._scrape.cachePrice.dep:'';
+	_this._scrape.cachePrice ? retPrice = _this._scrape.cachePrice.ret:'';
+	if(_row[0][0][0] && _row[0][0][0].length>1){
+		_.each(_row, function(_ow){
+			_.each(_ow, function(ow){
+				if(depPrice){
+					var dataDep = { price:0 };
+					_.each(depPrice,function(cache){
+						if(ow[1].toLowerCase()==cache.origin 
+							&& ow[2].toLowerCase()==cache.destination
+							&& ow[0].toLowerCase()==cache.flight){
+							if(dataDep.price==0 || dataDep.price>cache.price){
+								var __row = ow[10];
+								__row = __row instanceof Array ? __row : [__row];
+								_.each(__row, function (row) {
+									var available = row[1].match(/\d+/);
+									if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+										&& row[0].toLowerCase()==cache.class){
+										dataDep = cache;
+									}
+								});
+							}
+						}
+					});
+					if(dataDep.class)
+						outs.push({ ori:ow[1], dst:ow[2], flight:ow[0], class: dataDep.class });
+					if(retPrice){
+						var dataRet = { price:0 };
+						_.each(retPrice,function(cache){
+							if(ow[1].toLowerCase()==cache.origin
+								&& ow[2].toLowerCase()==cache.destination
+								&& ow[0].toLowerCase()==cache.flight){
+								if(dataRet.price==0 || dataRet.price>cache.price){
+									var __row = ow[10];
+									__row = __row instanceof Array ? __row : [__row];
+									_.each(__row, function (row) {
+										var available = row[1].match(/\d+/);
+										if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+											&& row[0].toLowerCase()==cache.class){
+											dataRet = cache;
+										}
+									});
+								}
+							}
+						});
+						if(dataRet.class)
+							outs.push({ ori:ow[1], dst:ow[2], flight:ow[0], class: dataRet.class });
+					}
+				}else{
+					var __row = ow[10];
+					__row = __row instanceof Array ? __row : [__row];
+					_.each(__row, function (row) {
+						var available = row[1].match(/\d+/);
+						if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
+							var out = {
+								ori: ow[1],
+								dst: ow[2],
+								flight: ow[0],
+								class: row[0],
+							};
+							outs.push(out);
+							return false;
+						}
+					});
 				}
 			});
 		});
+	}else if(_row[0][0].length>1){
+		_.each(_row, function(ow){
+			if(depPrice){
+				var dataDep = { price:0 };
+				_.each(depPrice,function(cache){
+					if(ow[1].toLowerCase()==cache.origin
+						&& ow[2].toLowerCase()==cache.destination
+						&& ow[0].toLowerCase()==cache.flight){
+						if(dataDep.price==0 || dataDep.price>cache.price){
+							var __row = ow[10];
+							__row = __row instanceof Array ? __row : [__row];
+							_.each(__row, function (row) {
+								var available = row[1].match(/\d+/);
+								if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+									&& row[0].toLowerCase()==cache.class){
+									dataDep = cache;
+								}
+							});
+						}
+					}
+				});
+				if(dataDep.class)
+					outs.push({ ori:ow[1], dst:ow[2], flight:ow[0], class: dataDep.class });
+				if(retPrice){
+					var dataRet = { price:0 };
+					_.each(retPrice,function(cache){
+						if(ow[1].toLowerCase()==cache.origin
+							&& ow[2].toLowerCase()==cache.destination
+							&& ow[0].toLowerCase()==cache.flight){
+							if(dataRet.price==0 || dataRet.price>cache.price){
+								var __row = ow[10];
+								__row = __row instanceof Array ? __row : [__row];
+								_.each(__row, function (row) {
+									var available = row[1].match(/\d+/);
+									if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+										&& row[0].toLowerCase()==cache.class){
+										dataRet = cache;
+									}
+								});
+							}
+						}
+					});
+					if(dataRet.class)
+						outs.push({ ori:ow[1], dst:ow[2], flight:ow[0], class: dataRet.class });
+				}
+			}else{
+				var __row = ow[10];
+				__row = __row instanceof Array ? __row : [__row];
+				_.each(__row, function (row) {
+					var available = row[1].match(/\d+/);
+					if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
+						var out = {
+							ori: ow[1],
+							dst: ow[2],
+							flight: ow[0],
+							class: row[0],
+						};
+						outs.push(out);
+						return false;
+					}
+				});
+			}
+		});
 	}else{
-		var __row = _row[10];
-			__row = __row instanceof Array ? __row : [__row];
-			_.each(__row, function (row) {
-				var available = row[1].match(/\d+/);
-				if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
-					var out = {
-						ori: _row[1],
-						dst: _row[2],
-						flight: _row[0],
-						class: row[0],
-					};
-					outs.push(out);
-					return false;
+		if(depPrice){
+			var dataDep = { price:0 };
+			_.each(depPrice,function(cache){
+				if(_row[1].toLowerCase()==cache.origin
+					&& _row[2].toLowerCase()==cache.destination
+					&& _row[0].toLowerCase()==cache.flight){
+					if(dataDep.price==0 || dataDep.price>cache.price){
+						var __row = _row[10];
+						__row = __row instanceof Array ? __row : [__row];
+						_.each(__row, function (row) {
+							var available = row[1].match(/\d+/);
+							if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+								&& row[0].toLowerCase()==cache.class){
+								dataDep = cache;
+							}
+						});
+					}
 				}
 			});
+			if(dataDep.class)
+				outs.push({ ori:_row[1], dst:_row[2], flight:_row[0], class: dataDep.class });
+			if(retPrice){
+				var dataRet = { price:0 };
+				_.each(retPrice,function(cache){
+					if(_row[1].toLowerCase()==cache.origin
+						&& _row[2].toLowerCase()==cache.destination
+						&& _row[0].toLowerCase()==cache.flight){
+						if(dataRet.price==0 || dataRet.price>cache.price){
+							var __row = _row[10];
+							__row = __row instanceof Array ? __row : [__row];
+							_.each(__row, function (row) {
+								var available = row[1].match(/\d+/);
+								if((row[1].indexOf('A')!='-1' || (available && available[0]>0))
+									&& row[0].toLowerCase()==cache.class){
+									dataRet = cache;
+								}
+							});
+						}
+					}
+				});
+				if(dataRet.class)
+					outs.push({ ori:_row[1], dst:_row[2], flight:_row[0], class: dataRet.class });
+			}
+		}else{
+			var __row = _row[10];
+				__row = __row instanceof Array ? __row : [__row];
+				_.each(__row, function (row) {
+					var available = row[1].match(/\d+/);
+					if(row[1].indexOf('A')!='-1' || (available && available[0] > 0)){
+						var out = {
+							ori: _row[1],
+							dst: _row[2],
+							flight: _row[0],
+							class: row[0],
+						};
+						outs.push(out);
+						return false;
+					}
+				});
+		}
 	}
+	debug('outs', outs);
 	return outs;
 }
 
@@ -123,8 +286,8 @@ function generateData(ids) {
 			dep_date = this._dt.ret_date.replace(/\s/g, '+');
 		}
 		var data = {
-			ori: _this._dt.ori.toUpperCase(),
-			// ori: _id[0].toUpperCase(),
+			// ori: _this._dt.ori.toUpperCase(),
+			ori: _id[0].toUpperCase(),
 			dst: _id[1].toUpperCase(),
 			airline: _id[2],
 			adult: this._dt.adult,
@@ -187,7 +350,7 @@ function getCache(options, note, resolve){
     _this.idsRet = [];
     for(var i in options.ids){
     	var id = options.ids[i];
-    	if(id.ori.toLowerCase()==_this.oriData.ori.toLowerCase()){
+    	if(id.ori.toLowerCase()==_this.oriData.ori.toLowerCase() || id.dst.toLowerCase()==_this.oriData.dst.toLowerCase()){
     		_this.idsDep.push(id);
     	}else{
     		_this.idsRet.push(id);
@@ -222,7 +385,7 @@ function getCache(options, note, resolve){
     	return resolve();
     }
     debug('getCache2')
-    _this.getPrice(_this.relogModesId, that)
+    _this.getPrice(_this.relogModesId, that, note)
     .then(function(res){
         if(_this.relogModesId){
         	return _this.getCache(options, note, resolve); 
@@ -252,7 +415,7 @@ function getCache(options, note, resolve){
     })
 }
 
-function getPrice(_dt, that){
+function getPrice(_dt, that, note){
 	debug('getPrice')
     var _this = this;
     return new Promise(function(resl, rejc){
@@ -270,9 +433,15 @@ function getPrice(_dt, that){
 	                		var _class = next[0].split('/');
 			            	var radio = _data.dep_radio.split('_')[0].split('-');
 			            	_data.dep_radio = radio[0]+'-'+radio[1]+'_'+_class[0].toLowerCase();
-		                    return _this.saveCache(next, _data, function(err, res){
-		                        return Promise.resolve(res);
-		                    });
+			            	return new Promise(function(resove, reject){
+			                    _this.saveCache(next, _data, function(err, res){
+			                    	if(note=='idsDep')
+	                					that.cachePrice.dep.push(res);
+	                				else
+	                					that.cachePrice.ret.push(res);
+			                        resove(res);
+			                    });
+			                })
                 		})
 			            .catch(function(err){
 			                debug(err.stack);
@@ -332,47 +501,13 @@ function mergeCachePrices(json) {
 		if(!rows[0]){
 			return rows;
 		}
-		if( rows[0][0][0].length>1 ){
-			rows = rows[0];
+		if( rows[0][0][0] && rows[0][0][0].length>1 ){
+			rows.forEach(function(row){
+				return _this.generatePrice(row);
+			})
+		}else{
+			rows = _this.generatePrice(rows);
 		}
-		rows.forEach(function(row) {
-			var cheapest = {
-				class: 'Full',
-				available: 0
-			};
-			var departCity = row[1];
-			var arriveCity = row[2];
-			var flight = row[0].toLowerCase();
-			if (!departCity && !arriveCity){
-				row.push(cheapest);
-				return true;
-			}
-			var currentRoute = departCity + arriveCity;
-			currentRoute = currentRoute.toLowerCase();
-			if (!_this.cachePrices[currentRoute]){
-				row.push(cheapest);
-				return true;
-			}
-			var nominal = 0;
-			var __class = '';
-			var available = '';
-			row[10].some(function(row_class){
-				__class = row_class[0].toLowerCase();
-				available = row_class[1];
-				var availableNum = available.match(/\d+/);
-				if(available=='A' || (availableNum && +availableNum[0]>=0)){
-					debug('row', __class, available);
-					return true;
-				}
-			});
-			if(row.class == 'Full')
-				return true;
-			cheapest = _this.cachePrices[currentRoute][flight][__class];
-			cheapest.class = __class;
-			cheapest.available = available;
-			row.push({ cheapest: cheapest });
-			return row;
-		});
 		return rows;
 	}
 	json.schedule[0] = looper('schedule', 0);
@@ -382,6 +517,108 @@ function mergeCachePrices(json) {
 		json.ret_schedule[1] = looper('ret_schedule', 1);
 	}
 	return json;
+}
+
+function generatePrice(rows){
+	var _this = this;
+	var _this = this;
+	var depPrice, retPrice;
+	_this._scrape.cachePrice ? depPrice = _this._scrape.cachePrice.dep:'';
+	_this._scrape.cachePrice ? retPrice = _this._scrape.cachePrice.ret:'';
+	rows.forEach(function(row) {
+		var cheapest = {
+			class: 'Full',
+			available: 0
+		};
+		var departCity = row[1];
+		var arriveCity = row[2];
+		var flight = row[0].toLowerCase();
+		if (!departCity && !arriveCity){
+			row.push(cheapest);
+			return true;
+		}
+		var currentRoute = departCity + arriveCity;
+		currentRoute = currentRoute.toLowerCase();
+		if (!_this.cachePrices[currentRoute]){
+			row.push(cheapest);
+			return true;
+		}
+		var __class = '';
+		var available = '';
+		if(depPrice){
+			_.each(depPrice,function(cache){
+				if(row[1].toLowerCase()==cache.origin 
+					&& row[2].toLowerCase()==cache.destination
+					&& flight==cache.flight){
+					row[10].some(function(row_class){
+						__class = row_class[0].toLowerCase();
+						available = row_class[1];
+						if(__class==cache.class 
+							&& flight==cache.flight 
+							&& _this.cachePrices[currentRoute]
+							&& _this.cachePrices[currentRoute][flight]
+							&& _this.cachePrices[currentRoute][flight][__class]){
+							cheapest = _this.cachePrices[currentRoute][flight][__class];
+							cheapest.class = __class;
+							cheapest.available = available;
+							row.push({ cheapest: cheapest });
+							return row;
+						}
+					});
+					return row;
+				}
+			});
+			if(retPrice){
+				_.each(retPrice,function(cache){
+					if(row[1].toLowerCase()==cache.origin 
+						&& row[2].toLowerCase()==cache.destination
+						&& flight==cache.flight){
+						row[10].some(function(row_class){
+							__class = row_class[0].toLowerCase();
+							available = row_class[1];
+							if(__class==cache.class 
+								&& flight==cache.flight 
+								&& _this.cachePrices[currentRoute]
+								&& _this.cachePrices[currentRoute][flight]
+								&& _this.cachePrices[currentRoute][flight][__class]){
+								cheapest = _this.cachePrices[currentRoute][flight][__class];
+								cheapest.class = __class;
+								cheapest.available = available;
+								row.push({ cheapest: cheapest });
+								return row;
+							}
+						});
+						return row;
+					}
+				});
+			}
+			if (!__class){
+				row.push(cheapest);
+				return true;
+			}
+			return row;
+		}
+		row[10].some(function(row_class){
+			available = row_class[1];
+			var availableNum = available.match(/\d+/);
+			if(available=='A' || (availableNum && +availableNum[0]>=0)){
+				__class = row_class[0].toLowerCase();
+				debug('row', __class, available);
+				return true;
+			}
+		});
+		if (!__class){
+			row.push(cheapest);
+			return true;
+		}
+		debug('_this.cachePrices[currentRoute]', _this.cachePrices[currentRoute], flight, __class);
+		cheapest = _this.cachePrices[currentRoute][flight][__class];
+		cheapest.class = __class;
+		cheapest.available = available;
+		row.push({ cheapest: cheapest });
+		return row;
+	});
+	return rows;
 }
 
 /**
@@ -472,6 +709,7 @@ var TriganaPrototype = {
 	calculateChild: calculateChild,
 	calculateInfant: calculateInfant,
 	calculateBasic: calculateBasic,
+	generatePrice: generatePrice,
 };
 var Trigana = Base.extend(TriganaPrototype);
 module.exports = Trigana;
