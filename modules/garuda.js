@@ -203,6 +203,7 @@ function generateData(id) {
 		cek_instant_id: cek_instant_id,
 		dep_radio: cek_instant_id,
 		priceScraper: false
+		xToken: this._dt.xToken,
 	};
 	for (var i = 5, j = 1, ln = _id.length; i < ln; i++, j++) {
 		data['transit' + j] = _id[i];
