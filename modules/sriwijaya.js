@@ -186,6 +186,9 @@ function generateData(id) {
 	// var rutes = _id[3];
 	var cek_instant_id = _id[3] + '_' + _id[4];
 	cek_instant_id = cek_instant_id.toUpperCase();
+	var date = this._dt.dep_date;
+	if(_id[1] == this._dt.ori.toLowerCase())
+		date = this._dt.ret_date;
 	var data = {
 		ori: _id[0].toUpperCase(),
 		dst: _id[1].toUpperCase(),
@@ -195,7 +198,7 @@ function generateData(id) {
 		cek_instant: 1,
 		cek_instant_id: cek_instant_id,
 		dep_radio: cek_instant_id,
-		dep_date: this._dt.dep_date,
+		dep_date: date,
 		rute: 'OW',
 		action: 'price',
 		user: 'DEPAG0101',
