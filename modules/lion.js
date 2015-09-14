@@ -506,6 +506,10 @@ function mergeCachePrices(json) {
 				returnCheapests[rowIdx++] = _cheapest;
 			else
 				departureCheapests[rowIdx++] = _cheapest;
+			classes = flights = '';
+			transitCounter = 0;
+			transits = [];
+			_cheapest = {};
 			return true;
 		}
 		if (!allRow[0][idx+1] 
