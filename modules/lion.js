@@ -345,6 +345,8 @@ function getCache(options, note, resolve){
 	                that.data.query.infant = options.mode[2];
             		return _this.getCache(options, 'idsRet', resolve);
             	}else{
+            		_this._dt.ori = _this.oriData.ori;
+    				_this._dt.dst = _this.oriData.dst;
             		return resolve();
             	}
             }
