@@ -5,8 +5,8 @@ var cheerio = require('cheerio');
 var moment = require('moment');
 var debug = require('debug')('raabbajam:priceCacheCalendar:gos');
 var _ = require('lodash');
-// var priceScrapers = require('priceScraper');
-var priceScrapers = require('../../pricescraper');
+var priceScrapers = require('priceScraper');
+// var priceScrapers = require('../../pricescraper');
 var GosPriceScrapers = priceScrapers.gos;
 
 // console.log(priceScrapers);
