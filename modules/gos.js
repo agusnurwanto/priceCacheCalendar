@@ -60,14 +60,14 @@ function mergeCache() {
 				for (var k in seats) {
 					var seat = seats[k];
 					if (seat.available)
-						this._scrape[nameTable][i][j]['seats'][k]['price'] = currentCache && currentCache[groupFlight] && currentCache[groupFlight][k] || 0;
+						this._scrape[nameTable][i][j]['seats'][k]['price'] = currentCache && currentCache[groupFlight] && currentCache[groupFlight][seat.class.toLowerCase()] || 0;
 				}
 			}
 		}.bind(this));
 	}
 	
 	looper.call(this, 'depart_flights');
-	if (this._scrape.return_flights && this._scrape.return_flights.length > 0)
+	if (this._scrape.return_flights)
 		looper.call(this, 'return_flights');
 	
 	return lowestPrices;
