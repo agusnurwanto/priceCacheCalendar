@@ -189,6 +189,12 @@ function getCheapestInRow(rowAll) {
 		dst = rute.substr(3, 3);
 		if (!rowAll[idx+1] 
 			|| (rowAll[idx+1] && (!rowAll[idx+1].connection || rowAll[idx+1].connection==0))){
+			if(rowAll[idx].connection!=0 && flights.indexOf('|')=='-1'){
+				classes = flights = '';
+				transitCounter = 0;
+				transits = [];
+				return true;
+			}
 			if(RT){
 				out = {
 					ori: ori,
@@ -213,6 +219,7 @@ function getCheapestInRow(rowAll) {
 			transits[transitCounter++] = dst;
 		}
 	});
+	/*throw('tes');*/
 	debug('outs', outs);
 	return outs;
 }
@@ -269,6 +276,7 @@ function scrapeLostData(ids) {
 		mode: _this.modes[0]
 	};
 	_this.oriData = JSON.parse(JSON.stringify(_this._dt));
+	_this._this.data.query = dt[0];
     _this._this.data.query.rute = 'ow';
 	_this.data = [];
 	_this.data.query = this._dt;
@@ -516,6 +524,13 @@ function mergeCachePrices(json) {
 		}
 		if (!allRow[0][idx+1] 
 			|| (allRow[0][idx+1] && (!allRow[0][idx+1].connection || allRow[0][idx+1].connection==0))){
+			if(allRow[0][idx].connection!=0 && flights.indexOf('|')=='-1'){
+				classes = flights = '';
+				transitCounter = 0;
+				transits = [];
+				_cheapest = {};
+				return true;
+			}
 			try {
 				_cheapest.prices = _this.cachePrices[_rute][flights.toLowerCase()][classes.toLowerCase()];
 				_cheapest.class = classes;
