@@ -6,6 +6,7 @@ var airasia   = require('./modules/airasia');
 var express   = require('./modules/express');
 var kalstar   = require('./modules/kalstar');
 var trigana   = require('./modules/trigana');
+var gos 	  = require('./modules/gos');
 var airlines  = {
 	garuda    : garuda,
 	lion      : lion,
@@ -15,6 +16,7 @@ var airlines  = {
 	express   : express,
 	kalstar   : kalstar,
 	trigana   : trigana,
+	gos: gos
 }
 /**
  * Main function that returning function on init
