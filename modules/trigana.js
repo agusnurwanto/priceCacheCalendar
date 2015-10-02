@@ -330,6 +330,7 @@ function scrapeLostData(ids) {
 		mode: _this.modes[0]
 	};
 	_this.oriData = JSON.parse(JSON.stringify(_this._dt));
+	_this._this.data.query = dt[0];
     _this._this.data.query.rute = 'ow';
 	_this.data = [];
 	_this.data.query = this._dt;
@@ -344,7 +345,6 @@ function scrapeLostData(ids) {
 }
 
 function getCache(options, note, resolve){
-	debug('getCache');
     var _this = this;
     _this.idsDep = [];
     _this.idsRet = [];
@@ -384,7 +384,6 @@ function getCache(options, note, resolve){
     if(!_this.relogModesId && !_this.relogModes && (note=='idsRet' || _this.oriData.rute.toLowerCase()!='rt')){
     	return resolve();
     }
-    debug('getCache2')
     _this.getPrice(_this.relogModesId, that, note)
     .then(function(res){
         if(_this.relogModesId){
@@ -398,6 +397,7 @@ function getCache(options, note, resolve){
         	return _this.getCache(options, note, resolve); 
         }else{
         	if(note!='idsRet' && _this.oriData.rute.toLowerCase()=='rt'){
+        		_this.cekAllIds = [];
 				_this.allModes = [];
             	options.mode = that.defaultModes[0];
                 that.data.query.adult = options.mode[0];
@@ -412,13 +412,13 @@ function getCache(options, note, resolve){
         }
     })
     .catch(function(err){
-        debug(err.stack);
+        debug(err.stack, 'tes 123');
         return resolve();
     })
 }
 
 function getPrice(_dt, that, note){
-	debug('getPrice')
+	debug('getPrice2')
     var _this = this;
     return new Promise(function(resl, rejc){
     	_dt.adult = that.data.query.adult;
@@ -515,6 +515,7 @@ function mergeCachePrices(json) {
 	json.schedule[0] = looper('schedule', 0);
 	json.schedule[1] = looper('schedule', 1);
 	if (!!json.ret_schedule){
+		debug('ret_schedule 123');
 		json.ret_schedule[0] = looper('ret_schedule', 0);
 		json.ret_schedule[1] = looper('ret_schedule', 1);
 	}
